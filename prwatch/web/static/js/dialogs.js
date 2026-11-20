@@ -101,7 +101,14 @@ export async function addPrDialog() {
         h('span', {}, s.id === 'new' ? h('strong', {}, s.title) : s.title, h('span', { class: 'muted' }, ` · ${s.note}`)))));
     };
     draw(result.sessions);
-    workDir.addEventListener('change', async () => draw((await askServer('claude-sessions', { workDir: workDir.value })).sessions || []));
+    const reload = async () => draw((await askServer('claude-sessions', { workDir: workDir.value })).sessions || []);
+    workDir.addEventListener('change', reload);
+    // Several clones of the same repository: the first is filled in, the others are one click away.
+    const others = h('div', { class: 'muted' });
+    if (result.clones.length > 1) {
+      others.append('Autres clones trouvés : ', ...result.clones.slice(1).flatMap((path) => [
+        h('button', { class: 'btn', type: 'button', title: path, onclick: () => { workDir.value = path; reload(); } }, path.split('/').pop() || path), ' ']));
+    }
     const add = h('button', { class: 'btn primary', type: 'button', disabled: result.state !== 'OPEN', onclick: async () => {
       const chosen = sessionBox.querySelector('input[name="session"]:checked');
       if (!chosen) { toast('Choisissez la session Claude à réveiller pour cette PR.', true); return; }
@@ -113,7 +120,7 @@ export async function addPrDialog() {
     } }, icon('add'), 'Ajouter à la surveillance');
     details.replaceChildren(
       h('p', {}, h('strong', {}, `${result.repo} #${result.pr}`), ` ${result.title}`, h('div', { class: 'muted' }, `Branche ${result.branch}${result.state !== 'OPEN' ? ` · ${result.state.toLowerCase()} : rien à surveiller` : ''}`)),
-      h('label', { class: 'column' }, h('span', {}, 'Dossier du clone local'), workDir),
+      h('label', { class: 'column' }, h('span', {}, 'Dossier du clone local'), workDir, others),
       h('div', { class: 'column' }, h('span', {}, 'Session Claude à réveiller pour cette PR'), sessionBox), add);
   };
   reference.addEventListener('keydown', (event) => { if (event.key === 'Enter') lookup(); });

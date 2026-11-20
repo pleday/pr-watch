@@ -248,6 +248,7 @@ const englishText = {
   'Adresse de la pull request': 'Pull request URL',
   'Recherche…': 'Searching…',
   'Dossier du clone local': 'Local clone directory',
+  'Autres clones trouvés : ': 'Other clones found: ',
   'Nouvelle session': 'New session',
   'Ajouter à la surveillance': 'Add to monitoring',
   'Rechercher': 'Search',

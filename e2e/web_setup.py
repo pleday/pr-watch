@@ -11,6 +11,7 @@ ROOT = REPO / 'e2e' / '.work'
 HOME = ROOT / 'home'
 WORK = ROOT / 'work'
 REMOTE = ROOT / 'remote.git'
+CLONES = ROOT / 'clones'  # where the local clones of fake-bitbucket repositories are looked for
 REAL_SESSION = os.environ.get('E2E_SESSION', '00000000-0000-0000-0000-000000000001')
 
 previous = ROOT / 'info.json'
@@ -49,6 +50,13 @@ def entry(pr, **fields):
     return base
 
 
+# Two clones of the same Bitbucket repository, one under another name and holding the branch of the PR that the form looks up, and an
+# unrelated one: no network is needed, only the address of `origin` is read.
+CLONES.mkdir()
+for name, origin, branch in (('my-repo', 'acme/my-repo', 'develop'), ('my-repo-bis', 'acme/my-repo', 'PROJ-123-recherche'), ('another', 'acme/another', 'develop')):
+    git('init', '-q', '-b', branch, name, cwd=CLONES)
+    git('remote', 'add', 'origin', f'git@bitbucket.org:{origin}.git', cwd=CLONES / name)
+
 registry = [
     entry(1, title='<img src=x onerror="window.__xss=1"> Remplacer Shepherd', attempts=2, mergeBlockers=['approbations 0/1', 'pipeline #6150 en échec'],
           lastReport='Rapport de test\n\n- **Cause :** `npmAuthToken` absent\n\nPR-WATCH: OK', lastReportAt='2026-11-17 10:31:21'),
@@ -65,7 +73,7 @@ registry = [
 (HOME / 'permissions.json').write_text(json.dumps({'at': '2026-01-01 00:00:00', 'checks': [{'id': 'claude', 'label': 'claude', 'required': True, 'why': '', 'features': [], 'ok': True, 'detail': 'ok'}], 'declined': []}), encoding='utf-8')
 # a configured installation: with no team settings the page shows the first-start banner and has no ticket links
 (HOME / 'config.json').write_text(json.dumps({'bitbucketWorkspace': 'acme', 'jiraSite': 'https://acme.atlassian.net', 'jiraImpactsField': 'Description des impacts potentiels',
-                                                'ticketTransitions': {'Tâche': 'Close', 'Bug': 'Corrigé'}}), encoding='utf-8')
+                                                'ticketTransitions': {'Tâche': 'Close', 'Bug': 'Corrigé'}, 'cloneFolders': [str(CLONES)]}), encoding='utf-8')
 (HOME / 'daemon.log').write_text(
     """2026-11-17 10:00:01 daemon started (pid 12)
 2026-11-17 10:00:07 fake-repo#1: session in use, 1 event(s) kept for later
@@ -89,11 +97,11 @@ PR-WATCH: ATTENTION le relecteur demande un choix
 )
 
 env = {**os.environ, 'PR_WATCH_HOME': str(HOME), 'PYTHONPATH': str(REPO)}
-subprocess.Popen([sys.executable, '-m', 'prwatch', 'web', 'serve', '8799'], env=env, cwd=REPO, stdout=open(ROOT / 'web.out', 'w'), stderr=subprocess.STDOUT, start_new_session=True)
+subprocess.Popen([sys.executable, str(REPO / 'e2e' / 'web_server.py'), '8799'], env=env, cwd=REPO, stdout=open(ROOT / 'web.out', 'w'), stderr=subprocess.STDOUT, start_new_session=True)
 for _ in range(50):
     time.sleep(0.2)
     if (HOME / 'web.json').exists():
         break
 info = json.loads((HOME / 'web.json').read_text())
-(ROOT / 'info.json').write_text(json.dumps({**info, 'home': str(HOME), 'work': str(WORK), 'remote': str(REMOTE)}))
+(ROOT / 'info.json').write_text(json.dumps({**info, 'home': str(HOME), 'work': str(WORK), 'remote': str(REMOTE), 'clones': str(CLONES)}))
 print(json.dumps({'port': info['port'], 'pid': info['pid']}))

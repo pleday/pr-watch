@@ -469,6 +469,26 @@ check('and is saved once complete', config().ticketTransitions.Bug === 'Corrigé
 await page.unroute('**/api/action');
 await page.locator('#tabs button[data-tab="prs"]').click();
 
+console.log('== add a pull request: the local clone');
+await page.getByRole('button', { name: 'Ajouter une PR' }).click();
+await page.fill('input[name="reference"]', 'acme/my-repo/pull-requests/12');
+await page.getByRole('button', { name: 'Rechercher' }).click();
+const cloneField = page.locator('input[name="workDir"]');
+await cloneField.waitFor();
+check('the clone that has the branch of the PR is filled in, though another carries the name of the repository', (await cloneField.inputValue()) === `${info.clones}/my-repo-bis`, await cloneField.inputValue());
+check('the other clone is offered under the field', JSON.stringify(await page.locator('#dialog button[title]').allTextContents()) === JSON.stringify(['my-repo']));
+check('a clone of another repository is not offered', !(await page.locator('#dialog').textContent()).includes('another'));
+const sessionsAsked = page.waitForRequest((request) => request.postData()?.includes('claude-sessions'));
+await page.locator('#dialog button[title]').click();
+check('a click on it fills the field', (await cloneField.inputValue()) === `${info.clones}/my-repo`);
+check('and loads the sessions of that folder', JSON.parse((await sessionsAsked).postData()).workDir === `${info.clones}/my-repo`);
+git(`${info.clones}/my-repo-bis`, 'checkout', '-q', '-b', 'elsewhere');
+await page.getByRole('button', { name: 'Rechercher' }).click();
+await page.waitForFunction((expected) => document.querySelector('input[name="workDir"]')?.value === expected, `${info.clones}/my-repo`);
+check('with no clone on the branch any more, the one named after the repository comes first again', (await page.locator('#dialog button[title]').allTextContents()).join() === 'my-repo-bis');
+await page.keyboard.press('Escape');
+await page.locator('#dialog').waitFor({ state: 'hidden' });
+
 console.log('== protection');
 const post = (headers, body, path = '/api/action') => new Promise((resolve) => {
   const data = JSON.stringify(body);

@@ -442,6 +442,34 @@ class PerformTest(unittest.TestCase):
         self.assertFalse(actions.perform({'action': 'merge', 'repo': 'fake-repo', 'pr': 1, 'strategy': 'rebase', 'confirmed': True})['ok'])
 
 
+class CloneGuessTest(unittest.TestCase):
+    def clone(self, root, name, branch):
+        path = os.path.join(root, name)
+        os.makedirs(path)
+        git(path, 'init', '-q', '-b', branch)
+        git(path, 'remote', 'add', 'origin', 'git@bitbucket.org:acme/my-repo.git')
+        return path
+
+    def guesses(self, root, branch=None):
+        reset_config()
+        set_registry([])
+        with mock.patch.object(pwconfig, 'config', return_value={**pwconfig.config(), 'cloneFolders': [root]}):
+            return pwadding.clone_guesses('my-repo', branch)
+
+    def test_a_clone_with_another_name_is_found_by_its_origin(self):
+        with tempfile.TemporaryDirectory() as root:
+            renamed = self.clone(root, 'my-repo-2', 'main')
+            os.makedirs(os.path.join(root, 'other', '.git'))
+            self.assertEqual(self.guesses(root), [renamed])
+
+    def test_the_clone_already_on_the_branch_comes_first(self):
+        with tempfile.TemporaryDirectory() as root:
+            named = self.clone(root, 'my-repo', 'main')
+            working = self.clone(root, 'my-repo-2', 'PROJ-1-x')
+            self.assertEqual(self.guesses(root), [named, working])
+            self.assertEqual(self.guesses(root, 'PROJ-1-x'), [working, named])
+
+
 class QuestionAnswerTest(unittest.TestCase):
     QUESTION = {'id': 9, 'author': 'Relecteur', 'place': 'a.ts:3', 'text': 'On valide ?', 'at': 'x'}
 

@@ -27,17 +27,35 @@ def parse_pr_reference(text):
     return (match.group(1), int(match.group(2))) if match else None
 
 
-def clone_guesses(repo):
-    """Folders that look like the local clone of `repo`: next to the clones of the PRs already watched, or in the usual places."""
+def clone_guesses(repo, branch=None):
+    """Folders that look like the local clone of `repo`: next to the clones of the PRs already watched, or in the usual places.
+    The ones that already have `branch` checked out come first: with several clones of one repository, that is the one at work."""
     parents = []
     for entry in pwstore.load_registry():
         parents.append(os.path.dirname(entry['workDir'].rstrip('/')))
     parents += [os.path.expanduser(p) for p in pwconfig.config()['cloneFolders']]
     found = []
+
+    def add(path):
+        if path not in found:
+            found.append(path)
+
     for parent in dict.fromkeys(parents):
         path = os.path.join(parent, repo)
-        if os.path.isdir(os.path.join(path, '.git')) and path not in found:
-            found.append(path)
+        if os.path.exists(os.path.join(path, '.git')):  # a file, not a folder, in a worktree
+            add(path)
+    # A clone may carry another name than its repository: look at where the folders next to the known clones come from.
+    for parent in dict.fromkeys(parents):
+        try:
+            names = sorted(os.listdir(parent))
+        except OSError:
+            continue
+        for name in names:
+            path = os.path.join(parent, name)
+            if os.path.exists(os.path.join(path, '.git')) and pwregistration.detect_defaults(path).get('repo') == repo:
+                add(path)
+    if branch:
+        found.sort(key=lambda path: pwregistration.detect_defaults(path).get('branch') != branch)  # stable: the order above is kept otherwise
     return found
 
 
@@ -74,15 +92,15 @@ def pr_lookup(reference):
         return pwcommon._result(False, f'PR introuvable : {repo}#{number} (dépôt, numéro ou droits du jeton ?).')
     if (refused := pwcommon._not_mine(pr)):
         return refused
-    guesses = clone_guesses(repo)
-    work_dir = guesses[0] if guesses else ''
     branch = pr['source']['branch']['name']
+    guesses = clone_guesses(repo, branch)
+    work_dir = guesses[0] if guesses else ''
     ticket = pwjira.ticket_key({'branch': branch, 'title': pr['title']})
     sessions = sessions_of(work_dir)
     if ticket:
         sessions.sort(key=lambda s: ticket not in s['title'])  # the session named after the ticket first; the others keep their order
     return pwcommon._result(True, f"{repo}#{number} : {pr['title']}", repo=repo, pr=number, title=pr['title'], branch=branch,
-                   state=pr['state'], workDir=work_dir, sessions=sessions, ticket=ticket)
+                   state=pr['state'], workDir=work_dir, clones=guesses, sessions=sessions, ticket=ticket)
 
 
 def claude_sessions(workDir):

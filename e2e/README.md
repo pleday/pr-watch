@@ -4,7 +4,7 @@
 
 Lance le tableau de bord sur des données factices (répertoire de données propre, PR de chaque état, dépôt git local avec
 remote nu) et le pilote dans un vrai Chrome avec Playwright : rendu, injection de HTML, actions, push et poussée en force
-(`--force-with-lease`), merge refusé, journal, options, réglages, protections du serveur, captures clair et sombre
+(`--force-with-lease`), merge refusé, journal, options, réglages, ajout d’une PR (clones locaux, Bitbucket simulé par `e2e/web_server.py`), protections du serveur, captures clair et sombre
 (dans `e2e/.work/`).
 
 ```sh
@@ -23,7 +23,7 @@ Les tests unitaires et d'intégration (sans navigateur) sont dans `tests/` : `ma
 
 Starts the dashboard on fake data (dedicated data directory, a PR in each state, local git repository with a bare
 remote) and drives it in a real Chrome with Playwright: rendering, HTML injection, actions, push and force push
-(`--force-with-lease`), refused merge, log, options, settings, server protections, light and dark screenshots
+(`--force-with-lease`), refused merge, log, options, settings, adding a PR (local clones, Bitbucket faked by `e2e/web_server.py`), server protections, light and dark screenshots
 (in `e2e/.work/`).
 
 ```sh
