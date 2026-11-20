@@ -1,6 +1,6 @@
 # Commandes courantes ; aucune dépendance à installer (bibliothèque standard seulement).
 # Everyday commands; nothing to install (standard library only).
-.PHONY: help test e2e run install link publish-github
+.PHONY: help test e2e run install link
 
 help: ## Liste des commandes / List the commands
 	@grep -E '^[a-z0-9-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/ —/'
@@ -22,7 +22,3 @@ link: ## Installe la commande `pr-watch` pour cette copie (~/.local/bin), sans p
 	@printf '#!/bin/sh\nexport PYTHONPATH=%s$${PYTHONPATH:+:$$PYTHONPATH}\nexec python3 -m prwatch "$$@"\n' "$(CURDIR)" > $(HOME)/.local/bin/pr-watch
 	@chmod +x $(HOME)/.local/bin/pr-watch
 	@echo "pr-watch installé / installed: $(HOME)/.local/bin/pr-watch (copie / checkout: $(CURDIR))"
-
-publish-github: ## Publie des commits de develop sur GitHub, sans leur ticket : make publish-github COMMIT=<sha> (voir scripts/publish-github.sh) / Publish develop commits on GitHub, without their ticket
-	@test -n "$(COMMIT)" || { echo "usage: make publish-github COMMIT="<sha> [<sha>...]""; exit 2; }
-	scripts/publish-github.sh $(COMMIT)
