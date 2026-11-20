@@ -1,0 +1,32 @@
+{
+  "name": "example",
+  "description": "Exemple de profil d'équipe (à copier et adapter) : espace Bitbucket, Jira, Sonar, revue automatique, états des tickets après merge. / Example team profile (copy and adapt).",
+  "options": {
+    "bitbucketWorkspace": "acme",
+    "jiraSite": "https://acme.atlassian.net",
+    "jiraImpactsField": "Description des impacts potentiels",
+    "sonarPattern": "sonar",
+    "reviewStepPattern": "AI review|pr-review",
+    "followBotComments": [
+      {
+        "author": "Bitbucket Pipelines",
+        "startsWith": "## 🤖 Revue automatique",
+        "ignoreIfContains": "Rien d'important à signaler"
+      }
+    ],
+    "infraPatterns": [
+      "ECONNRESET",
+      "ETIMEDOUT",
+      "EAI_AGAIN",
+      "No space left on device",
+      "Could not resolve host",
+      "Bad Gateway",
+      "Service Unavailable"
+    ],
+    "ticketTransitions": {
+      "Task": "Done",
+      "Bug": "Awaiting deployment",
+      "Story": "Awaiting deployment"
+    }
+  }
+}

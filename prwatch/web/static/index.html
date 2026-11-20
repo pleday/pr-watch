@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>PR Watch</title>
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 64 64" width="30" height="30" aria-hidden="true">
+        <rect width="64" height="64" rx="14" fill="#1f6feb"></rect>
+        <circle cx="20" cy="18" r="6" fill="none" stroke="#fff" stroke-width="4"></circle>
+        <circle cx="20" cy="46" r="6" fill="none" stroke="#fff" stroke-width="4"></circle>
+        <circle cx="46" cy="46" r="6" fill="none" stroke="#fff" stroke-width="4"></circle>
+        <path d="M20 24v16M46 40V26a8 8 0 0 0-8-8h-6" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"></path>
+        <path d="M36 11l-6 7 6 7" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      <div class="brand-copy">
+        <h1>PR Watch</h1>
+        <div class="brand-status">
+          <span id="daemon-state" class="status-pill daemon-state off"></span>
+          <span id="claude-state" class="status-pill claude-state on"></span>
+        </div>
+      </div>
+    </div>
+    <div id="daemon" class="daemon"></div>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-tab="prs" aria-selected="true"><span data-i18n="tab.pullRequests">Pull requests</span> <span id="count" class="badge" hidden></span></button>
+    <button role="tab" data-tab="log" aria-selected="false" data-i18n="tab.journal">Journal</button>
+    <button role="tab" data-tab="options" aria-selected="false" data-i18n="tab.options">Options</button>
+  </nav>
+
+  <main>
+    <section id="tab-prs" role="tabpanel"><div id="setup-banner" class="banner notice warning" hidden></div><div id="suspension" class="banner notice" hidden></div><div id="permission-banner" hidden></div><div id="updates" hidden></div><div class="prs-bar" role="toolbar" aria-label="Pull requests">
+      <input id="pr-filter" type="search" data-i18n-attr='{"placeholder":"filter.placeholder","title":"filter.title","aria-label":"filter.pullRequests"}' placeholder="Filtrer… (touche /)" title="Dépôt, numéro, titre, branche ou ticket ; Échap efface" aria-label="Filtrer les pull requests">
+      <label class="check"><input id="pr-actionable" type="checkbox"> <span data-i18n="filter.actionable">À traiter</span></label>
+      <span id="pr-count" class="muted"></span>
+      <span class="spacer"></span>
+      <button id="refresh-prs" class="btn" type="button" title="Relire les pull requests maintenant (F5)"></button>
+      <button id="expand-all" class="btn" type="button"></button>
+      <button id="collapse-all" class="btn" type="button"></button>
+      <button id="ack-all" class="btn" type="button" hidden></button>
+      <button id="add-pr" class="btn" type="button"></button>
+    </div><div id="prs" class="cards"></div></section>
+
+    <section id="tab-log" role="tabpanel" hidden>
+      <div class="toolbar">
+        <select id="log-mode" aria-label="Filtre" data-i18n-attr='{"aria-label":"log.filter"}'></select>
+        <select id="log-pr" aria-label="Pull request"><option value="" data-i18n="log.all">Toutes les PR</option></select>
+        <input id="log-search" type="search" placeholder="Rechercher dans le journal" aria-label="Rechercher" data-i18n-attr='{"placeholder":"log.search","aria-label":"log.search"}'>
+        <label class="check"><input id="log-follow" type="checkbox" checked> <span data-i18n="log.follow">Suivre</span></label>
+        <button id="log-refresh" class="btn" data-i18n="common.refresh">Actualiser</button>
+      </div>
+      <div id="log" class="log"></div>
+      <p id="log-summary" class="muted"></p>
+    </section>
+
+    <section id="tab-options" role="tabpanel" hidden>
+      <form id="options" class="options" autocomplete="off"></form>
+    </section>
+  </main>
+
+  <dialog id="dialog"></dialog>
+  <dialog id="busy" class="busy" aria-live="polite"><div class="spinner" aria-hidden="true"></div><div class="label">Traitement en cours…</div></dialog>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <script type="module" src="/static/js/app.js"></script>
+</body>
+</html>

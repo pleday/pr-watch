@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pr-watch"
+version = "0.1.1"
+description = "Surveille les pull requests Bitbucket et réveille la session Claude Code qui les a ouvertes / Watches Bitbucket pull requests and wakes the Claude Code session that opened them"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+# La fenêtre de bureau (Linux) a besoin de GTK 3 : sur Ubuntu, `sudo apt install python3-gi gir1.2-gtk-3.0`.
+gtk = ["PyGObject"]
+
+[project.scripts]
+pr-watch = "prwatch.cli:main"
+pr-watch-web = "prwatch.web.server:main"
+pr-watch-tray = "prwatch.engine.service:tray_main"
+
+[tool.setuptools.packages.find]
+include = ["prwatch*"]
+
+[tool.setuptools.package-data]
+"prwatch.web" = ["static/*"]
