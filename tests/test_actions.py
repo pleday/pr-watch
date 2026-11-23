@@ -434,6 +434,33 @@ class PerformTest(unittest.TestCase):
         self.assertTrue(poke.exists())
         poke.unlink()
 
+    def test_archiving_the_journal_keeps_it_aside_and_starts_a_new_one(self):
+        pwstore.LOG.write_text('2026-11-17 10:00:00 one\n2026-11-17 10:00:01 two\n', encoding='utf-8')
+        self.assertEqual(actions.perform({'action': 'journal-archive'})['message'], 'Action non confirmée.')
+        self.assertTrue(pwstore.LOG.read_text(encoding='utf-8').startswith('2026-11-17 10:00:00 one'))
+        result = actions.perform({'action': 'journal-archive', 'confirmed': True})
+        self.assertTrue(result['ok'], result)
+        (archive,) = sorted(pwstore.ARCHIVES.glob('daemon-*.log'))
+        self.assertEqual(archive.read_text(encoding='utf-8'), '2026-11-17 10:00:00 one\n2026-11-17 10:00:01 two\n')
+        self.assertEqual(len(pwstore.LOG.read_text(encoding='utf-8').splitlines()), 1)  # the line saying it was archived
+        self.assertIn('journal archived', pwstore.LOG.read_text(encoding='utf-8'))
+
+    def test_only_the_latest_archives_are_kept(self):
+        pwstore.ARCHIVES.mkdir(parents=True, exist_ok=True)
+        for old in pwstore.ARCHIVES.glob('*'):
+            old.unlink()
+        for day in range(1, 13):
+            (pwstore.ARCHIVES / f'daemon-202611{day:02d}-000000.log').write_text('x\n', encoding='utf-8')
+        pwstore.LOG.write_text('2026-11-17 10:00:00 one\n', encoding='utf-8')
+        pwstore.archive_log()
+        names = sorted(p.name for p in pwstore.ARCHIVES.glob('daemon-*.log'))
+        self.assertEqual(len(names), pwstore.ARCHIVES_KEPT)
+        self.assertNotIn('daemon-20261101-000000.log', names)
+
+    def test_an_empty_journal_has_nothing_to_archive(self):
+        pwstore.LOG.write_text('', encoding='utf-8')
+        self.assertFalse(actions.perform({'action': 'journal-archive', 'confirmed': True})['ok'])
+
     def test_merge(self):
         with mock.patch.object(pwmerging, 'merge_pr', return_value=(True, 'PR mergée.')) as merge:
             result = actions.perform({'action': 'merge', 'repo': 'fake-repo', 'pr': 1, 'strategy': 'squash', 'closeSourceBranch': False, 'confirmed': True})

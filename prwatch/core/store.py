@@ -47,6 +47,38 @@ def log(message):
         handle.write(f'{now()} {message}\n')
 
 
+ARCHIVES = DIR / 'journal-archives'
+ARCHIVES_KEPT = 10
+
+
+def archive_log():
+    """Moves the journal to `journal-archives/daemon-<date>.log` and starts an empty one; (archive, lines), None if empty.
+
+    The file is emptied in place, not renamed: the daemon's own output is attached to it and goes on writing in it. Only the
+    latest `ARCHIVES_KEPT` archives are kept, so the folder does not grow without bound either.
+    """
+    try:
+        data = LOG.read_bytes()
+    except OSError:
+        return None
+    if not data.strip():
+        return None
+    ARCHIVES.mkdir(parents=True, exist_ok=True)
+    target = ARCHIVES / f"daemon-{time.strftime('%Y%m%d-%H%M%S')}.log"
+    target.write_bytes(data)
+    with open(LOG, 'r+b') as handle:
+        handle.seek(len(data))
+        rest = handle.read()  # written since the read: it stays in the new journal
+        handle.seek(0)
+        handle.truncate()
+        handle.write(rest)
+    for old in sorted(ARCHIVES.glob('daemon-*.log'))[:-ARCHIVES_KEPT]:
+        old.unlink(missing_ok=True)
+    lines = data.count(b'\n')
+    log(f'journal archived: {target.name} ({lines} lines)')
+    return target, lines
+
+
 class registry_lock:
     def __enter__(self):
         DIR.mkdir(parents=True, exist_ok=True)

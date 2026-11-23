@@ -29,6 +29,7 @@ ACTIONS = {
     'ticket-transition': (pwtickets.ticket_transition, ('repo', 'pr', 'transition', 'impacts')),
     'open-link': (pwoptions.open_link, ('url',)),
     'refresh': (pwoptions.refresh, ()),
+    'journal-archive': (pwoptions.journal_archive, ()),
     'permissions-check': (pwoptions.permissions_check, ()),
     'permissions-decline': (pwoptions.permissions_decline, ('ids',)),
     'plugins-status': (pwoptions.plugins_status, ()),
@@ -53,7 +54,7 @@ REFRESHING = {'resume', 'refresh', 'pause', 'reset', 'acknowledge', 'wake', 'ans
 
 
 # Actions that cannot be undone, or that leave the machine: the request must say the user confirmed.
-CONFIRMED = {'unwatch', 'force-push', 'merge', 'push', 'fetch', 'rebase', 'ticket-transition', 'plugins-update'}
+CONFIRMED = {'journal-archive', 'unwatch', 'force-push', 'merge', 'push', 'fetch', 'rebase', 'ticket-transition', 'plugins-update'}
 
 
 # Actions on a pull request that only read: they do not settle its notification.

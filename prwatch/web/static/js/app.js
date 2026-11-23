@@ -189,6 +189,10 @@ document.getElementById('log-mode').addEventListener('change', filterChanged);
 document.getElementById('log-pr').addEventListener('change', filterChanged);
 
 document.getElementById('log-refresh').addEventListener('click', () => refreshLog(true));
+document.getElementById('log-archive').addEventListener('click', async () => {
+  if (!await confirmDialog(t('log.archiveTitle'), t('log.archiveBody'), t('log.archive'), 'solid')) return;
+  if ((await act('journal-archive', {}, true)).ok) { S.logLimit = 200; refreshLog(true); }
+});
 
 document.getElementById('log-search').addEventListener('input', () => { clearTimeout(S.searchTimer); S.searchTimer = setTimeout(filterChanged, 250); });
 

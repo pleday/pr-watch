@@ -239,6 +239,14 @@ def refresh():
     return pwcommon._result(True, 'Pull requests actualisées.')
 
 
+def journal_archive():
+    """Archives the journal (the dashboard's "Archiver"): the file is emptied, its content is kept in `journal-archives/`."""
+    done = pwstore.archive_log()
+    if not done:
+        return pwcommon._result(False, 'Le journal est déjà vide.')
+    return pwcommon._result(True, f'Journal archivé : {done[1]} lignes dans {done[0]}.')
+
+
 def open_link(url):
     """Opens a web address in the default browser of the system (the dashboard window is a browser of its own)."""
     parsed = urllib.parse.urlparse(url) if isinstance(url, str) else None

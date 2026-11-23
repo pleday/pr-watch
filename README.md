@@ -258,7 +258,7 @@ Une seule fenêtre, la même sur tous les systèmes : le tableau de bord web. Le
   poussés (le bouton *Pousser* les envoie) ; l'état est lu dans `origin/<branche>`, sans réseau.
 - **Notifications** : titre, puis dépôt / numéro / titre de la PR, puis détail. Sous Linux (`notify-send` 0.8+), cliquer
   dessus ouvre le tableau de bord sur la PR (`pr-watch ui --select REPO#N`). Double-cliquer une carte ouvre le journal de la PR, et le bouton *Dernier rapport* l'ouvre sur son dernier rapport de Claude ;
-  le journal montre les 200 dernières entrées et « Entrées plus anciennes » remonte plus loin.
+  le journal montre les 200 dernières entrées et « Entrées plus anciennes » remonte plus loin. « Archiver » vide le journal et le range dans `journal-archives/` (10 archives conservées).
 - **Ouvrir la session** retrouve le processus de la session et l'application qui l'héberge (si aucune ne l'héberge, une
   fenêtre demande où la reprendre, en ne proposant que les endroits qui rouvrent vraiment cette conversation : Claude Desktop s'il la connaît, IntelliJ ou VS Code avec un plugin Claude assez récent, ou Claude Code dans le terminal par défaut ; une ligne explique pourquoi un endroit attendu manque ; l'endroit d'où la session a été ouverte est enregistré quand la PR est ajoutée à PR Watch, il est proposé en premier avec la mention « Recommandé ») : Claude Desktop ouvre la
   conversation exacte (`claude://code/continue?session=local_…`, l'identifiant que Desktop donne à la conversation ; il ne
@@ -648,7 +648,7 @@ A single window, the same on all systems: the web dashboard. The interface code 
   pushed (the *Push* button sends them); the state is read from `origin/<branch>`, without network.
 - **Notifications**: title, then repository / number / title of the PR, then details. On Linux (`notify-send` 0.8+), clicking
   on one opens the dashboard on the PR (`pr-watch ui --select REPO#N`). Double-clicking a card opens the PR's log, and the *Latest report* button opens it on Claude's latest report;
-  the log shows the last 200 entries and "Show older entries" goes further back.
+  the log shows the last 200 entries and "Show older entries" goes further back. "Archive" empties the log and stores it in `journal-archives/` (10 archives kept).
 - **Open session** finds the session's process and the application that hosts it (if none hosts it, a
   window asks where to resume it, only offering the places that really reopen this conversation: Claude Desktop if it knows it, IntelliJ or VS Code with a recent enough Claude plugin, or Claude Code in the default terminal; a line explains why an expected place is missing; the place the session was opened from is recorded when the PR is added to PR Watch, and is offered first with the "Recommended" label): Claude Desktop opens the
   exact conversation (`claude://code/continue?session=local_…`, the identifier Desktop gives the conversation; it cannot
