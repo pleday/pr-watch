@@ -534,6 +534,11 @@ await page.route('**/api/action', async (route) => {
 await page.getByRole('button', { name: 'Actualiser' }).click();
 await sleep(400);
 check('the refresh button asks for a refresh', barRefreshes.length === 1);
+await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+await page.locator('.toast').last().hover();
+await page.locator('.toast .toast-copy').last().click();
+await sleep(200);
+check('the copy button of a toast puts its message in the clipboard', (await page.evaluate(() => navigator.clipboard.readText())) === 'Actualisation demandée.');
 await page.unroute('**/api/action');
 
 await page.waitForSelector('.card');

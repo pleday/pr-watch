@@ -160,6 +160,10 @@ textarea.drafting { background-image: linear-gradient(90deg, transparent, color-
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
 .toasts { position: fixed; right: 16px; bottom: 16px; display: grid; gap: 8px; z-index: 10; }
 .toast { background: var(--text); color: var(--bg); padding: 9px 14px; border-radius: 10px; max-width: 420px; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); }
+.toast { display: flex; align-items: flex-start; gap: 10px; }
+.toast-text { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.toast-copy { flex: none; display: inline-flex; padding: 2px; border: 0; border-radius: 6px; background: transparent; color: inherit; opacity: .65; cursor: pointer; }
+.toast-copy:hover, .toast-copy:focus-visible { opacity: 1; background: rgba(127, 127, 127, .3); }
 .toast.bad { background: var(--red); color: #fff; }
 @media (max-width: 640px) { .top { padding: 8px 12px; } main { padding: 12px; } }
 

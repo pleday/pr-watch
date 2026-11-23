@@ -13,6 +13,8 @@ export const loadedAt = Date.now();
 // ── icons ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 // One set, drawn the same way (24 grid, 2 px round strokes, the colour of the text), so no two actions look alike by accident.
 export const ICONS = {
+  copy: 'M9 9h11v11H9zM5 15H4V4h11v1',
+  check: 'M5 13l4 4L19 7',
   open: 'M7 17L17 7M8 7h9v9',
   wake: 'M13 2L4 14h7l-1 8 9-12h-7z',
   pause: 'M8 5v14M16 5v14',
@@ -73,12 +75,27 @@ export function h(tag, attrs, ...children) {
 }
 
 export function toast(message, bad = false) {
-  const node = h('div', { class: `toast${bad ? ' bad' : ''}`, role: 'status' }, message);
+  const copy = h('button', { class: 'toast-copy', type: 'button', title: 'Copier', 'aria-label': 'Copier' }, icon('copy'));
+  const node = h('div', { class: `toast${bad ? ' bad' : ''}`, role: 'status' }, h('span', { class: 'toast-text' }, message), copy);
   const box = document.getElementById('toasts');
   box.append(node);
   // At most three at once: a series of actions must not bury the page under messages.
   while (box.children.length > 3) box.firstElementChild.remove();
-  setTimeout(() => node.remove(), bad ? 9000 : 4500);
+  // The message stays while the pointer is on it (to read it, to copy it), then lingers a little before going.
+  let timer = null;
+  const arm = (ms) => { clearTimeout(timer); timer = setTimeout(() => node.remove(), ms); };
+  node.addEventListener('mouseenter', () => clearTimeout(timer));
+  node.addEventListener('mouseleave', () => arm(2500));
+  copy.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(String(message));
+      copy.replaceChildren(icon('check'));
+      copy.title = translate('Copié');
+    } catch {
+      copy.disabled = true; // the browser refused the clipboard: nothing to hide, nothing to promise
+    }
+  });
+  arm(bad ? 9000 : 4500);
 }
 
 export async function call(path, options = {}) {

@@ -245,6 +245,8 @@ const englishText = {
   'Recommandé': 'Recommended',
   'Le démon tourne avec une ancienne version : redémarrez-le (pr-watch stop, puis pr-watch ensure) pour choisir l’application.': 'The daemon is running an older version. Restart it (pr-watch stop, then pr-watch ensure) to choose an application.',
   'Annuler': 'Cancel',
+  'Copier': 'Copy',
+  'Copié': 'Copied',
   'Fermer': 'Close',
   'Ouvrir le ticket dans Jira': 'Open issue in Jira',
   '— choisir un état —': '— choose a status —',
