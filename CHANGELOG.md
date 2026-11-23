@@ -4,6 +4,8 @@
 
 ## Non publié
 
+## 0.1.3 — 2026-11-23
+
 - **Messages : bouton « Copier ».** Chaque message affiché en bas à droite porte un bouton de copie (le texte part dans le presse-papiers, l’icône devient une coche). Le message ne disparaît plus tant que le pointeur est dessus.
 - **Journal : bouton « Archiver ».** Dans l’onglet Journal, « Archiver » (après confirmation) vide le journal et en garde le contenu dans `journal-archives/daemon-<date>.log` du dossier de données ; les 10 dernières archives sont conservées. Les PR suivies ne sont pas touchées, et le démon continue d’écrire dans le même fichier.
 - **F5 / Ctrl+R : l’état des PR est relu tout de suite.** L’actualisation lit elle-même chaque PR suivie (titre, approbations, pipelines) en parallèle au lieu d’attendre le démon, qui pouvait être au milieu d’un cycle ralenti par les erreurs de Bitbucket. Une PR prête à merger apparaît donc immédiatement.
@@ -58,6 +60,8 @@
 # Changelog (English)
 
 ## Unreleased
+
+## 0.1.3 — 2026-11-23
 
 - **Messages: "Copy" button.** Each message shown at the bottom right has a copy button (the text goes to the clipboard, the icon turns into a check mark). The message no longer goes away while the pointer is on it.
 - **Log: "Archive" button.** In the Log tab, "Archive" (after confirmation) empties the log and keeps its content in `journal-archives/daemon-<date>.log` of the data folder; the last 10 archives are kept. The watched PRs are not touched, and the daemon goes on writing in the same file.
