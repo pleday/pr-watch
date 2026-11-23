@@ -35,6 +35,8 @@ ACTIONS = {
     'plugins-update': (pwoptions.plugins_update, ('kind',)),
     'push': (lambda repo, pr: pwpr.git_push(repo, pr, False), ('repo', 'pr')),
     'force-push': (lambda repo, pr: pwpr.git_push(repo, pr, True), ('repo', 'pr')),
+    'fetch': (pwpr.git_fetch, ('repo', 'pr')),
+    'rebase': (pwpr.git_rebase, ('repo', 'pr')),
     'merge': (pwpr.merge, ('repo', 'pr', 'strategy', 'closeSourceBranch')),
     'pr-settings': (pwpr.pr_settings, ('repo', 'pr', 'settings')),
     'pr-settings-form': (pwpr.pr_settings_form, ('repo', 'pr', 'push', 'handling', 'merge')),
@@ -47,11 +49,11 @@ ACTIONS = {
 
 
 # Actions after which the daemon polls the pull requests without waiting.
-REFRESHING = {'resume', 'refresh', 'pause', 'reset', 'acknowledge', 'wake', 'answer-question', 'push', 'force-push', 'merge', 'pr-settings', 'pr-settings-form'}
+REFRESHING = {'resume', 'refresh', 'pause', 'reset', 'acknowledge', 'wake', 'answer-question', 'push', 'force-push', 'fetch', 'rebase', 'merge', 'pr-settings', 'pr-settings-form'}
 
 
 # Actions that cannot be undone, or that leave the machine: the request must say the user confirmed.
-CONFIRMED = {'unwatch', 'force-push', 'merge', 'push', 'ticket-transition', 'plugins-update'}
+CONFIRMED = {'unwatch', 'force-push', 'merge', 'push', 'fetch', 'rebase', 'ticket-transition', 'plugins-update'}
 
 
 # Actions on a pull request that only read: they do not settle its notification.

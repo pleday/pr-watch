@@ -164,7 +164,21 @@ export async function confirmAction(entry, name) {
 export async function pushDialog(entry, force) {
   if (!(await confirmAction(entry, force ? 'force-push' : 'push'))) return;
   toast('Push en cours…');
-  const result = await act(force ? 'force-push' : 'push', { repo: entry.repo, pr: entry.pr }, true);
+  let result = await act(force ? 'force-push' : 'push', { repo: entry.repo, pr: entry.pr }, true);
+  // The branch moved on origin: pushing would fail. Ask before fetching it, then push again.
+  if (result.needsFetch) {
+    if (!(await confirmAction(entry, 'fetch'))) return;
+    const fetched = await act('fetch', { repo: entry.repo, pr: entry.pr }, true);
+    if (!fetched.ok) { if (fetched.output) showText('Résultat de la récupération', fetched.output); return; }
+    result = await act('push', { repo: entry.repo, pr: entry.pr }, true);
+  }
+  // Fetched, but the local branch lacks what origin has: offer the rebase, then push again.
+  if (result.needsRebase) {
+    if (!(await confirmAction(entry, 'rebase'))) return;
+    const rebased = await act('rebase', { repo: entry.repo, pr: entry.pr }, true);
+    if (!rebased.ok) { if (rebased.output) showText('Résultat du rebase', rebased.output); return; }
+    result = await act('push', { repo: entry.repo, pr: entry.pr }, true);
+  }
   if (result.output) showText('Résultat du push', result.output);
 }
 

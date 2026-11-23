@@ -631,6 +631,13 @@ class RegisterDefaultsTest(unittest.TestCase):
 
 
 class GitActionsTest(unittest.TestCase):
+    def setUp(self):
+        # a rebase commits: it needs an identity, which the throw-away repositories do not have
+        identity = {'GIT_COMMITTER_NAME': 't', 'GIT_COMMITTER_EMAIL': 't@t', 'GIT_AUTHOR_NAME': 't', 'GIT_AUTHOR_EMAIL': 't@t'}
+        patch = mock.patch.dict(os.environ, identity)
+        patch.start()
+        self.addCleanup(patch.stop)
+
     def test_unpushed_commits_are_counted_from_the_remote_branch(self):
         with tempfile.TemporaryDirectory() as root:
             work, _ = make_repo_with_remote(root)
@@ -644,6 +651,74 @@ class GitActionsTest(unittest.TestCase):
             self.assertEqual(pwstatus.unpushed(pr)['commits'], 0)
             self.assertIsNone(pwstatus.unpushed(entry(1, workDir='/nowhere')))
             self.assertIsNone(pwstatus.unpushed(entry(1, workDir=str(work), state='done')))
+
+    def test_a_branch_that_moved_on_origin_is_fetched_before_the_push(self):
+        with tempfile.TemporaryDirectory() as root:
+            work, remote = make_repo_with_remote(root)
+            set_registry([entry(1, workDir=str(work))])
+            other = work.parent / 'other'
+            git(root, 'clone', '-q', '-b', 'feature/x', str(remote), str(other))
+            (other / 'b.txt').write_text('theirs\n')
+            git(other, 'add', '.')
+            git(other, 'commit', '-qm', 'theirs')
+            git(other, 'push', '-q', 'origin', 'HEAD:feature/x')
+            theirs = git(other, 'rev-parse', 'HEAD')
+
+            asked = pwpr.git_push('fake-repo', 1)
+            self.assertFalse(asked['ok'])
+            self.assertTrue(asked['needsFetch'])
+            self.assertEqual(actions.perform({'action': 'fetch', 'repo': 'fake-repo', 'pr': 1})['message'], 'Action non confirmée.')
+
+            fetched = actions.perform({'action': 'fetch', 'repo': 'fake-repo', 'pr': 1, 'confirmed': True})
+            self.assertTrue(fetched['ok'], fetched)
+            self.assertEqual(git(work, 'rev-parse', 'origin/feature/x'), theirs)
+            (work / 'c.txt').write_text('mine\n')
+            git(work, 'add', '.')
+            git(work, 'commit', '-qm', 'mine')
+            behind = pwpr.git_push('fake-repo', 1)  # known now, but the local branch lacks it
+            self.assertTrue(behind['needsRebase'])
+            self.assertNotIn('needsFetch', behind)
+            self.assertEqual(actions.perform({'action': 'rebase', 'repo': 'fake-repo', 'pr': 1})['message'], 'Action non confirmée.')
+            rebased = actions.perform({'action': 'rebase', 'repo': 'fake-repo', 'pr': 1, 'confirmed': True})
+            self.assertTrue(rebased['ok'], rebased)
+            self.assertTrue(pwpr.git_push('fake-repo', 1)['ok'])
+            self.assertEqual(git(remote, 'rev-parse', 'feature/x'), git(work, 'rev-parse', 'HEAD'))
+
+    def test_a_rebase_does_not_switch_the_checked_out_branch(self):
+        with tempfile.TemporaryDirectory() as root:
+            work, remote = make_repo_with_remote(root)
+            set_registry([entry(1, workDir=str(work))])
+            git(work, 'checkout', '-q', '-b', 'other')
+            other = work.parent / 'other-clone'
+            git(root, 'clone', '-q', '-b', 'feature/x', str(remote), str(other))
+            (other / 'b.txt').write_text('theirs\n')
+            git(other, 'add', '.')
+            git(other, 'commit', '-qm', 'theirs')
+            git(other, 'push', '-q', 'origin', 'HEAD:feature/x')
+            self.assertTrue(pwpr.git_fetch('fake-repo', 1)['ok'])
+            self.assertTrue(pwpr.git_push('fake-repo', 1)['needsRebase'])  # HEAD is on `other`, the branch is the one compared
+            result = pwpr.git_rebase('fake-repo', 1)
+            self.assertFalse(result['ok'])
+            self.assertIn('git checkout feature/x', result['message'])
+            self.assertEqual(git(work, 'rev-parse', '--abbrev-ref', 'HEAD'), 'other')
+
+    def test_a_conflicting_rebase_is_aborted(self):
+        with tempfile.TemporaryDirectory() as root:
+            work, remote = make_repo_with_remote(root)
+            set_registry([entry(1, workDir=str(work))])
+            other = work.parent / 'other'
+            git(root, 'clone', '-q', '-b', 'feature/x', str(remote), str(other))
+            (other / 'a.txt').write_text('theirs\n')
+            git(other, 'commit', '-qam', 'theirs')
+            git(other, 'push', '-q', 'origin', 'HEAD:feature/x')
+            (work / 'a.txt').write_text('mine\n')
+            git(work, 'commit', '-qam', 'mine')
+            before = git(work, 'rev-parse', 'HEAD')
+            self.assertTrue(pwpr.git_fetch('fake-repo', 1)['ok'])
+            result = pwpr.git_rebase('fake-repo', 1)
+            self.assertFalse(result['ok'])
+            self.assertIn('Rebase annulé', result['output'])
+            self.assertEqual(git(work, 'rev-parse', 'HEAD'), before)
 
     def test_push_and_force_push_with_lease(self):
         with tempfile.TemporaryDirectory() as root:

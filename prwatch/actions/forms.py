@@ -64,6 +64,18 @@ def confirmations(entry, cfg):
             'title': 'Pousser la branche ?', 'label': 'Pousser', 'destructive': False,
             'body': f"git push origin {entry['branch']}\ndepuis {entry['workDir']}",
         },
+        'fetch': {
+            'title': 'Récupérer la branche ?', 'label': 'Récupérer', 'destructive': False,
+            'body': f"La branche {entry['branch']} a avancé sur origin : quelqu’un a poussé un commit que ce clone n’a pas.\n"
+                    f"git fetch origin {entry['branch']}\ndepuis {entry['workDir']}\n"
+                    'Seule la copie d’origin est mise à jour : la branche locale et les fichiers ne changent pas.',
+        },
+        'rebase': {
+            'title': 'Rebaser la branche ?', 'label': 'Rebaser', 'destructive': False,
+            'body': f"Origin a des commits que {entry['branch']} n’a pas : le push serait refusé.\n"
+                    f"git rebase origin/{entry['branch']}\ndepuis {entry['workDir']}\n"
+                    'Vos commits non poussés sont rejoués par-dessus. En cas de conflit, le rebase est annulé et rien ne change.',
+        },
         'force-push': {
             'title': 'Pousser en force — action destructrice', 'label': 'Pousser en force', 'destructive': True,
             'body': f"Réécrit l’historique de origin/{entry['branch']} avec le contenu local de {entry['workDir']}.\n"

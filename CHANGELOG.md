@@ -5,6 +5,7 @@
 ## Non publié
 
 - **Licence MIT** ajoutée (`LICENSE`, champ `license` du paquet).
+- **Pousser : la branche qui a avancé sur origin se récupère d’abord, après confirmation.** Quand quelqu’un a poussé un commit que le clone n’a pas, « Pousser » ne lance plus un push voué à l’échec (le hook affichait `Invalid revision range`) : il demande « Récupérer la branche ? », lance `git fetch origin <branche>` (la branche locale et les fichiers ne changent pas), puis relance le push. Si la branche locale est en retard sur origin, il propose « Rebaser la branche ? » (`git rebase origin/<branche>`, annulé tout seul en cas de conflit) et pousse ensuite.
 - **Ajouter une PR : le clone local est retrouvé plus souvent.** Un clone dont le dossier porte un autre nom que le dépôt (ou un worktree) est reconnu à l’adresse de son `origin`. Avec plusieurs clones du même dépôt, celui qui a déjà la branche de la PR est proposé en premier, et les autres sont des boutons sous le champ « Dossier du clone local ».
 - **Claude suspendu : plus aucun appel direct à Claude.** Pendant une suspension (forfait presque épuisé, plus de jetons), la proposition de texte des impacts du dialogue du ticket Jira et la création d'une « Nouvelle session » par *Ajouter une PR* ne lancent plus `claude -p` : le dialogue le dit au lieu d'afficher « Traduction en cours… », et choisir une session existante reste possible. Les opérations Jira faites à la main ne changent pas.
 - **Bandeaux masqués** : une règle `display: flex` l'emportait sur l'attribut `hidden`, et deux barres vides s'affichaient sous les onglets. `[hidden]` l'emporte de nouveau.
@@ -50,6 +51,7 @@
 ## Unreleased
 
 - **MIT license** added (`LICENSE`, `license` field of the package).
+- **Push: a branch that moved on origin is fetched first, after confirmation.** When someone pushed a commit the clone does not have, "Push" no longer runs a push doomed to fail (the hook printed `Invalid revision range`): it asks "Fetch the branch?", runs `git fetch origin <branch>` (the local branch and files are untouched), then pushes again. If the local branch lags behind origin, it offers "Rebase the branch?" (`git rebase origin/<branch>`, aborted automatically on a conflict) and pushes afterwards.
 - **Add a PR: the local clone is found more often.** A clone whose folder has another name than the repository (or a worktree) is recognised by the address of its `origin`. With several clones of the same repository, the one that already has the PR's branch is proposed first, and the others are buttons under the "Local clone directory" field.
 - **Claude suspended: no more direct calls to Claude.** During a suspension (plan nearly exhausted, no tokens left), the suggested impacts text in the Jira issue dialog and the creation of a "New session" by *Add a PR* no longer run `claude -p`: the dialog says so instead of showing "Translating with Claude…", and choosing an existing session remains possible. Jira operations done by hand are unchanged.
 - **Hidden banners**: a `display: flex` rule overrode the `hidden` attribute, and two empty bars were displayed under the tabs. `[hidden]` wins again.

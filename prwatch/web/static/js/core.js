@@ -99,7 +99,7 @@ export function followUp() {
 // A treatment that lasts shows a loader over the whole page, dialogs included, so nothing else can be started meanwhile.
 // It appears after a short delay: a quick action must not make it flash. A modal <dialog> is used because it covers the
 // ones already open (a fixed <div> would stay under them) and makes the rest of the page inert.
-const WAITING = { 'usage-refresh': 'Mesure de la consommation…', merge: 'Merge en cours…', push: 'Poussée en cours…', 'force-push': 'Poussée en force en cours…', 'ticket-info': 'Lecture du ticket…', 'ticket-transition': 'Mise à jour du ticket…', 'add-pr': 'Ajout de la pull request…', 'pr-lookup': 'Recherche de la pull request…', 'plugins-update': 'Installation du plugin…' };
+const WAITING = { 'usage-refresh': 'Mesure de la consommation…', merge: 'Merge en cours…', push: 'Poussée en cours…', fetch: 'Récupération en cours…', rebase: 'Rebase en cours…', 'force-push': 'Poussée en force en cours…', 'ticket-info': 'Lecture du ticket…', 'ticket-transition': 'Mise à jour du ticket…', 'add-pr': 'Ajout de la pull request…', 'pr-lookup': 'Recherche de la pull request…', 'plugins-update': 'Installation du plugin…' };
 const QUIET = new Set(['refresh', 'ticket-draft', 'jira-metadata']); // background work the user does not wait for
 let working = 0;
 let loaderTimer = null;

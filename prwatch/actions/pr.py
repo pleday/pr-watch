@@ -131,10 +131,52 @@ def unwatch(repo, pr):
     return pwcommon._result(len(kept) != len(entries), 'Surveillance arrêtée.' if len(kept) != len(entries) else 'Pull request inconnue.')
 
 
+def _git(entry, *args, timeout=60):
+    """Runs git in the clone of a pull request: the finished process, None when git cannot run or takes too long."""
+    try:
+        return subprocess.run(['git', *args], cwd=entry['workDir'], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=timeout)
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def _remote_branch_unknown(entry):
+    """True when the branch on origin is at a commit this clone does not have: someone pushed, and only a fetch brings it.
+
+    The push hook of the repository cannot list the commits it sends then (`Invalid revision range`), and Bitbucket refuses
+    the push anyway. A network or git error says nothing: the push goes on and reports it itself.
+    """
+    listed = _git(entry, 'ls-remote', '--heads', 'origin', entry['branch'], timeout=30)
+    tip = listed.stdout.split()[0] if listed and listed.returncode == 0 and listed.stdout.strip() else ''
+    if not tip:
+        return False
+    known = _git(entry, 'cat-file', '-e', f'{tip}^{{commit}}', timeout=10)
+    return bool(known) and known.returncode != 0
+
+
+def _commits_behind(entry):
+    """How many commits origin/<branch> has that the local branch lacks (as last fetched); 0 when it cannot tell.
+
+    The branch itself is compared, not HEAD: the clone may have another branch checked out (a PR added by hand).
+    """
+    counted = _git(entry, 'rev-list', '--count', f"{entry['branch']}..origin/{entry['branch']}", timeout=10)
+    try:
+        return int(counted.stdout) if counted and counted.returncode == 0 else 0
+    except ValueError:
+        return 0
+
+
 def git_push(repo, pr, force=False):
+    """Pushes the branch; before a plain push, a branch that moved on origin is reported instead of pushed.
+
+    `needsFetch`: origin has commits this clone has never seen. `needsRebase`: it has them, and the local branch lacks them.
+    """
     entry = pwcommon._entry(repo, pr)
     if not entry:
         return pwcommon._result(False, 'Pull request inconnue.')
+    if not force and _remote_branch_unknown(entry):
+        return pwcommon._result(False, 'La branche a avancé sur origin : récupérez-la avant de pousser.', needsFetch=True)
+    if not force and _commits_behind(entry):
+        return pwcommon._result(False, 'La branche locale est en retard sur origin : rebasez-la avant de pousser.', needsRebase=True)
     command = ['git', 'push', *(['--force-with-lease'] if force else []), 'origin', entry['branch']]
     try:
         done = subprocess.run(command, cwd=entry['workDir'], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=180)
@@ -142,6 +184,40 @@ def git_push(repo, pr, force=False):
         return pwcommon._result(False, f'Push impossible : {error}')
     output = f"$ {' '.join(command)}\n(dans {entry['workDir']})\n\n{done.stdout}{done.stderr}".strip()
     return pwcommon._result(done.returncode == 0, 'Push réussi.' if done.returncode == 0 else 'Push refusé ou en échec.', output=output)
+
+
+def git_fetch(repo, pr):
+    """`git fetch origin <branch>`: updates origin/<branch> only; the local branch and the working tree are not touched."""
+    entry = pwcommon._entry(repo, pr)
+    if not entry:
+        return pwcommon._result(False, 'Pull request inconnue.')
+    command = ['git', 'fetch', 'origin', entry['branch']]
+    done = _git(entry, *command[1:], timeout=180)
+    if done is None:
+        return pwcommon._result(False, 'Récupération impossible : git ne répond pas.')
+    output = f"$ {' '.join(command)}\n(dans {entry['workDir']})\n\n{done.stdout}{done.stderr}".strip()
+    return pwcommon._result(done.returncode == 0, 'Branche récupérée.' if done.returncode == 0 else 'Récupération en échec.', output=output)
+
+
+def git_rebase(repo, pr):
+    """`git rebase origin/<branch>`; on a conflict the rebase is aborted, so the clone is left as it was."""
+    entry = pwcommon._entry(repo, pr)
+    if not entry:
+        return pwcommon._result(False, 'Pull request inconnue.')
+    current = _git(entry, 'rev-parse', '--abbrev-ref', 'HEAD', timeout=10)
+    if current is None or current.stdout.strip() != entry['branch']:
+        # rebasing another branch would mean switching the checkout under the user's feet
+        return pwcommon._result(False, f"Rebase impossible : {entry['workDir']} n’est pas sur la branche {entry['branch']} (faites `git checkout {entry['branch']}` d’abord).")
+    command = ['git', 'rebase', f"origin/{entry['branch']}"]
+    done = _git(entry, *command[1:], timeout=180)
+    if done is None:
+        return pwcommon._result(False, 'Rebase impossible : git ne répond pas.')
+    output = f"$ {' '.join(command)}\n(dans {entry['workDir']})\n\n{done.stdout}{done.stderr}".strip()
+    if done.returncode != 0:
+        aborted = _git(entry, 'rebase', '--abort', timeout=30)
+        if aborted and aborted.returncode == 0:
+            output += '\n\n$ git rebase --abort\nRebase annulé : le clone est revenu à son état d’avant.'
+    return pwcommon._result(done.returncode == 0, 'Branche rebasée.' if done.returncode == 0 else 'Rebase en échec (conflits ou fichiers modifiés).', output=output)
 
 
 def merge(repo, pr, strategy=None, close_source_branch=True):
