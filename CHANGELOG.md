@@ -4,10 +4,15 @@
 
 ## Non publié
 
-- **Licence MIT** ajoutée (`LICENSE`, champ `license` du paquet).
+## 0.1.2 — 2026-11-23
+
 - **Icône de barre : les PR en cours sont listées, pas seulement celles qui demandent quelque chose.** Le menu montre les 5 premières PR : celles qui demandent une action en tête (dans le même ordre d’urgence), puis les autres en cours, les terminées en dernier. Chaque ligne ouvre la fenêtre sur la PR. Le reste est compté (« + 3 autres en cours »). Le nombre de lignes se règle dans Options › Général (`trayMaxPrs`, 5 par défaut, de 1 à 20). Sans rien à traiter, le titre devient « Pull requests (2) · rien à traiter : » au lieu de « Rien à traiter. » seul.
 - **Pousser : la branche qui a avancé sur origin se récupère d’abord, après confirmation.** Quand quelqu’un a poussé un commit que le clone n’a pas, « Pousser » ne lance plus un push voué à l’échec (le hook affichait `Invalid revision range`) : il demande « Récupérer la branche ? », lance `git fetch origin <branche>` (la branche locale et les fichiers ne changent pas), puis relance le push. Si la branche locale est en retard sur origin, il propose « Rebaser la branche ? » (`git rebase origin/<branche>`, annulé tout seul en cas de conflit) et pousse ensuite.
 - **Ajouter une PR : le clone local est retrouvé plus souvent.** Un clone dont le dossier porte un autre nom que le dépôt (ou un worktree) est reconnu à l’adresse de son `origin`. Avec plusieurs clones du même dépôt, celui qui a déjà la branche de la PR est proposé en premier, et les autres sont des boutons sous le champ « Dossier du clone local ».
+
+## 0.1.1 — 2026-11-20
+
+- **Licence MIT** ajoutée (`LICENSE`, champ `license` du paquet).
 - **Claude suspendu : plus aucun appel direct à Claude.** Pendant une suspension (forfait presque épuisé, plus de jetons), la proposition de texte des impacts du dialogue du ticket Jira et la création d'une « Nouvelle session » par *Ajouter une PR* ne lancent plus `claude -p` : le dialogue le dit au lieu d'afficher « Traduction en cours… », et choisir une session existante reste possible. Les opérations Jira faites à la main ne changent pas.
 - **Bandeaux masqués** : une règle `display: flex` l'emportait sur l'attribut `hidden`, et deux barres vides s'affichaient sous les onglets. `[hidden]` l'emporte de nouveau.
 - **Test de bout en bout** : il part d'une installation configurée (espace Bitbucket, site Jira, états de ticket), vérifie l'onglet Équipe (champs et exemples, adresse Jira non sécurisée refusée, une valeur par ligne) et compte les 7 panneaux des options.
@@ -32,9 +37,6 @@
 - **Icône d'état par PR** (⚠ attention, ✔ prête, ✖ abandonnée, ⏸ pause, ■ terminée, 👁 surveillée) avant le nom de la PR, avec un tooltip qui en donne la raison (et ce qui bloque le merge).
 - **Commits en attente de push** : l'icône prend un ⬆ et la carte affiche « ⬆ À pousser ». Calculé sans réseau à partir de `origin/<branche>` (aussi frais que le dernier fetch ou push) ; une branche jamais poussée est signalée aussi.
 - **Fenêtre autonome sous GNOME** : elle apparaissait sous IntelliJ, qui avait lancé la session Claude à l'origine du démon. Les processus lancés par PR Watch ne reçoivent plus `DESKTOP_STARTUP_ID` / `XDG_ACTIVATION_TOKEN` / `GIO_LAUNCHED_DESKTOP_FILE`, sont lancés dans leur propre scope systemd `app-gnome-<identifiant>-N.scope` (GNOME retrouve aussi l'application par le cgroup du processus), et la fenêtre est ouverte dans un profil Chrome à part (`~/.claude/pr-watch/chrome`) dont la classe `chrome-127.0.0.1__-Default` est le `StartupWMClass` de l'entrée `.desktop` : le dock lui donne le nom et l'icône de PR Watch. Il faut relancer l'icône après la mise à jour (`pr-watch stop`, quitter l'icône, puis `pr-watch ui`).
-- Les textes affichés (statut d'une PR, activité de la session, formulaire de merge, confirmations, formulaires de réglages) sont fournis par `prwatch/actions/` ; nouvelle action `pr-settings-form`.
-- Le pipeline installe `git` (absent de l'image `python:3.12-slim`) pour les tests des actions de poussée.
-- `pr-watch tray` explique en une ligne ce qui manque quand GTK 3 n'est pas installé, au lieu d'une trace d'erreur ; le README documente l'installation par pipx.
 
 ## 0.1.0
 
@@ -51,10 +53,15 @@
 
 ## Unreleased
 
-- **MIT license** added (`LICENSE`, `license` field of the package).
+## 0.1.2 — 2026-11-23
+
 - **Tray icon: pull requests in progress are listed, not only those that ask for something.** The menu shows the first 5 pull requests: those that ask for an action first (in the same order of urgency), then the others in progress, finished ones last. Each line opens the window on that PR. The rest is counted ("+ 3 autres en cours"). The number of lines is set in Options › General (`trayMaxPrs`, 5 by default, 1 to 20). With nothing to do, the heading reads "Pull requests (2) · rien à traiter :" instead of a lone "Rien à traiter.".
 - **Push: a branch that moved on origin is fetched first, after confirmation.** When someone pushed a commit the clone does not have, "Push" no longer runs a push doomed to fail (the hook printed `Invalid revision range`): it asks "Fetch the branch?", runs `git fetch origin <branch>` (the local branch and files are untouched), then pushes again. If the local branch lags behind origin, it offers "Rebase the branch?" (`git rebase origin/<branch>`, aborted automatically on a conflict) and pushes afterwards.
 - **Add a PR: the local clone is found more often.** A clone whose folder has another name than the repository (or a worktree) is recognised by the address of its `origin`. With several clones of the same repository, the one that already has the PR's branch is proposed first, and the others are buttons under the "Local clone directory" field.
+
+## 0.1.1 — 2026-11-20
+
+- **MIT license** added (`LICENSE`, `license` field of the package).
 - **Claude suspended: no more direct calls to Claude.** During a suspension (plan nearly exhausted, no tokens left), the suggested impacts text in the Jira issue dialog and the creation of a "New session" by *Add a PR* no longer run `claude -p`: the dialog says so instead of showing "Translating with Claude…", and choosing an existing session remains possible. Jira operations done by hand are unchanged.
 - **Hidden banners**: a `display: flex` rule overrode the `hidden` attribute, and two empty bars were displayed under the tabs. `[hidden]` wins again.
 - **End-to-end test**: it starts from a configured installation (Bitbucket workspace, Jira site, issue statuses), checks the Team tab (fields and examples, insecure Jira address refused, one value per line) and counts the 7 options panels.
@@ -79,9 +86,6 @@
 - **Status icon per PR** (⚠ attention, ✔ ready, ✖ abandoned, ⏸ pause, ■ finished, 👁 watched) before the PR name, with a tooltip that gives the reason (and what blocks the merge).
 - **Commits waiting to be pushed**: the icon gets a ⬆ and the card displays "⬆ To push". Computed without network from `origin/<branch>` (as fresh as the last fetch or push); a branch never pushed is flagged too.
 - **Standalone window under GNOME**: it appeared under IntelliJ, which had launched the Claude session at the origin of the daemon. Processes launched by PR Watch no longer receive `DESKTOP_STARTUP_ID` / `XDG_ACTIVATION_TOKEN` / `GIO_LAUNCHED_DESKTOP_FILE`, are launched in their own systemd scope `app-gnome-<identifier>-N.scope` (GNOME also finds the application by the process's cgroup), and the window is opened in a separate Chrome profile (`~/.claude/pr-watch/chrome`) whose class `chrome-127.0.0.1__-Default` is the `StartupWMClass` of the `.desktop` entry: the dock gives it the name and icon of PR Watch. The icon must be restarted after the update (`pr-watch stop`, quit the icon, then `pr-watch ui`).
-- The displayed texts (PR status, session activity, merge form, confirmations, settings forms) are provided by `prwatch/actions/`; new action `pr-settings-form`.
-- The pipeline installs `git` (absent from the `python:3.12-slim` image) for the push action tests.
-- `pr-watch tray` explains in one line what is missing when GTK 3 is not installed, instead of an error trace; the README documents installation with pipx.
 
 ## 0.1.0
 
