@@ -117,6 +117,11 @@ function renderState(state) {
       h('span', {}, t('setup.workspace')),
       h('button', { class: 'btn', type: 'button', onclick: () => { S.optionsPanel = 'team'; selectTab('options'); } }, t('setup.open')));
   }
+  const bitbucket = document.getElementById('bitbucket-banner');
+  bitbucket.hidden = !state.bitbucket?.down;
+  if (!bitbucket.hidden) {
+    bitbucket.replaceChildren(h('span', {}, state.bitbucket.lastOk ? t('bitbucket.down', { at: formatDateTime(state.bitbucket.lastOk) }) : t('bitbucket.downNever')));
+  }
   const suspension = document.getElementById('suspension');
   suspension.hidden = !state.suspension;
   if (state.suspension) {

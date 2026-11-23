@@ -5,6 +5,7 @@
 ## Non publié
 
 - **F5 / Ctrl+R : l’état des PR est relu tout de suite.** L’actualisation lit elle-même chaque PR suivie (titre, approbations, pipelines) en parallèle au lieu d’attendre le démon, qui pouvait être au milieu d’un cycle ralenti par les erreurs de Bitbucket. Une PR prête à merger apparaît donc immédiatement.
+- **Un bandeau prévient quand Bitbucket ne répond pas.** Après des délais dépassés ou des erreurs serveur (5xx, 429) sur les lectures du démon ou de F5, le tableau de bord affiche « Bitbucket ne répond pas correctement… » avec l’heure de la dernière lecture réussie ; il disparaît tout seul à la première réponse (ou après dix minutes sans appel). Un refus de droit (403) n’en déclenche pas.
 - **Une erreur de Bitbucket ne fabrique plus de faux blocage.** Quand la liste des pipelines n’a pas pu être lue (délai dépassé, 503), l’état « prête à merger » est conservé au lieu d’afficher « aucun pipeline sur le dernier commit ».
 
 ## 0.1.2 — 2026-11-23

@@ -628,6 +628,37 @@ class ReadinessTest(unittest.TestCase):
                 self.assertTrue(registry()[0]['ready'])
 
 
+class BitbucketHealthTest(unittest.TestCase):
+    def setUp(self):
+        pwstore.BITBUCKET_HEALTH.unlink(missing_ok=True)
+        pwstore._health.update(lastOk=0.0, lastFail=0.0, written=0.0)
+
+    def test_a_timeout_makes_it_down_and_an_answer_ends_it(self):
+        self.assertFalse(pwstore.bitbucket_health()['down'])
+        pwstore.note_bitbucket(True)
+        pwstore.note_bitbucket(False)
+        self.assertTrue(pwstore.bitbucket_health()['down'])
+        self.assertTrue(pwstore.bitbucket_health()['lastOk'])
+        pwstore.note_bitbucket(True)
+        self.assertFalse(pwstore.bitbucket_health()['down'])
+
+    def test_an_old_failure_says_nothing_about_now(self):
+        pwstore.note_bitbucket(False)
+        with mock.patch.object(pwstore.time, 'time', return_value=time.time() + pwstore.BITBUCKET_DOWN_WINDOW + 5):
+            self.assertFalse(pwstore.bitbucket_health()['down'])
+
+    def test_the_api_reports_timeouts_and_5xx_but_not_a_refused_right(self):
+        import urllib.error
+        for error, down in ((TimeoutError('t'), True), (urllib.error.HTTPError('u', 503, 'x', {}, None), True), (urllib.error.HTTPError('u', 403, 'x', {}, None), False)):
+            with self.subTest(error=repr(error)):
+                pwstore._health.update(lastOk=0.0, lastFail=0.0, written=0.0)
+                pwstore.note_bitbucket(True)
+                with mock.patch.object(pwbitbucket, 'auth_header', return_value='x'), mock.patch.object(pwbitbucket._OPENER, 'open', side_effect=error), \
+                        mock.patch.object(pwbitbucket.time, 'sleep'):
+                    self.assertIsNone(pwbitbucket.api('/x'))
+                self.assertEqual(pwstore.bitbucket_health()['down'], down)
+
+
 class DesktopTest(unittest.TestCase):
     def test_exec_quoting(self):
         self.assertEqual(pwdesktop._exec_quote('plain/path-1.2'), 'plain/path-1.2')

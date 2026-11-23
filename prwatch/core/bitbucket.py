@@ -46,15 +46,19 @@ def api(path, params=None, raw=False):
         try:
             with _OPENER.open(request, timeout=30) as response:
                 body = response.read().decode('utf-8', 'replace')
+                pwstore.note_bitbucket(True)
                 return body if raw else json.loads(body)
         except urllib.error.HTTPError as error:
             if error.code in (429, 500, 502, 503) and attempt < 2:
                 time.sleep(5 * (attempt + 1))
                 continue
             pwstore.log(f'API {error.code} on {path}')
+            # 4xx (a missing right, an unknown page) is an answer: Bitbucket is up. Only the overload and server errors count.
+            pwstore.note_bitbucket(error.code < 500 and error.code != 429)
             return None
         except (urllib.error.URLError, TimeoutError) as error:
             pwstore.log(f'API error on {path}: {error}')
+            pwstore.note_bitbucket(False)
             time.sleep(3)
     return None
 

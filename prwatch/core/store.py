@@ -62,6 +62,42 @@ class registry_lock:
 SUSPENDED = DIR / 'suspended.json'
 USAGE_OVERRIDE = DIR / 'usage-override.json'
 SCHEDULE_OVERRIDE = DIR / 'schedule-override.json'
+BITBUCKET_HEALTH = DIR / 'bitbucket-health.json'
+BITBUCKET_DOWN_WINDOW = 600  # a failure older than this (ten minutes) says nothing about now: the daemon may simply have slept
+_health = {'lastOk': 0.0, 'lastFail': 0.0, 'written': 0.0}
+
+
+def note_bitbucket(ok):
+    """Records that a call to Bitbucket worked or gave up (timeout, 5xx), for the banner of the dashboard.
+
+    The daemon and the dashboard are two processes: the state goes through a file. Successes are written at most every
+    30 seconds, unless they end a failing streak, so that a busy cycle does not rewrite it for every call.
+    """
+    now = time.time()
+    if ok:
+        if _health['lastFail'] <= _health['lastOk'] and now - _health['written'] < 30:
+            _health['lastOk'] = now
+            return
+        _health['lastOk'] = now
+    else:
+        _health['lastFail'] = now
+    _health['written'] = now
+    try:
+        DIR.mkdir(parents=True, exist_ok=True)
+        BITBUCKET_HEALTH.write_text(json.dumps({'lastOk': _health['lastOk'], 'lastFail': _health['lastFail']}), encoding='utf-8')
+    except OSError:
+        pass
+
+
+def bitbucket_health():
+    """{'down': whether the latest calls failed, 'lastOk': when Bitbucket last answered, as the journal writes dates (None if never seen)}."""
+    try:
+        data = json.loads(BITBUCKET_HEALTH.read_text(encoding='utf-8'))
+        last_ok, last_fail = float(data.get('lastOk') or 0), float(data.get('lastFail') or 0)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return {'down': False, 'lastOk': None}
+    down = last_fail > last_ok and time.time() - last_fail < BITBUCKET_DOWN_WINDOW
+    return {'down': down, 'lastOk': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(last_ok)) if last_ok else None}
 
 
 def schedule_override():
