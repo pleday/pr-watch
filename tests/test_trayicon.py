@@ -55,14 +55,22 @@ class TrayIconTest(unittest.TestCase):
     def test_the_rows_that_lead_somewhere_are_the_pull_requests_listed(self):
         entries = [{'repo': 'api', 'pr': 12, 'title': 'fix', 'ready': True}, {'repo': 'web', 'pr': 3, 'state': 'done'}]
         rows = traysummary.rows(True, False, None, entries)
-        self.assertEqual([(r['kind'], r['target']) for r in rows], [('status', None), ('heading', None), ('pr', 'api#12'), ('more', None)],
-                         'the state, the headings and the note on the rest are text: nothing to click')
+        self.assertEqual([(r['kind'], r['target']) for r in rows], [('status', None), ('heading', None), ('pr', 'api#12'), ('pr', 'web#3')],
+                         'the state and the heading are text: nothing to click; every pull request listed leads to its card')
         self.assertEqual(rows[2]['text'], '• api #12 · fix — Prête à merger ✓')
-        self.assertEqual(rows[3]['text'], '+ 1 autre en cours')
+        self.assertEqual(rows[3]['text'], '• web #3 — Terminée')
+
+    def test_the_pull_requests_in_progress_are_listed_after_those_that_ask_something(self):
+        entries = [{'repo': 'a', 'pr': 1, 'state': 'done'}, {'repo': 'a', 'pr': 2, 'state': 'watching'}, {'repo': 'a', 'pr': 3, 'title': 'broken', 'needsAttention': 'x'},
+                   {'repo': 'a', 'pr': 4, 'state': 'paused'}]
+        lines = traysummary.tooltip_text(True, False, None, entries).splitlines()
+        self.assertEqual([line.split(' — ')[0] for line in lines[2:]], ['• a #3 · broken', '• a #2', '• a #4', '• a #1'], 'attention first, finished last')
+        many = [{'repo': 'a', 'pr': n, 'state': 'watching'} for n in range(1, 9)]
+        self.assertEqual(traysummary.tooltip_text(True, False, None, many).splitlines()[-1], '+ 3 autres en cours')
 
     def test_nothing_to_do_and_no_pull_request(self):
         quiet = traysummary.tooltip_text(True, False, None, [{'repo': 'a', 'pr': 1, 'state': 'watching'}, {'repo': 'a', 'pr': 2, 'state': 'paused'}]).splitlines()
-        self.assertEqual(quiet[1:], ['Rien à traiter.', '+ 2 en cours'])
+        self.assertEqual(quiet[1:], ['Pull requests (2) · rien à traiter :', '• a #1 — Surveillée', '• a #2 — En pause'])
         self.assertEqual(traysummary.tooltip_text(True, False, None, []).splitlines()[1:], ['Aucune pull request.'])
 
     def test_a_line_stays_short_so_the_menu_stays_narrow(self):

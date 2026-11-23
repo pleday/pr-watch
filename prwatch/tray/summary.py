@@ -1,5 +1,5 @@
-"""What the status icon tells, as the lines of its native menu: the state, the few pull requests that ask for something, a note
-on the others.
+"""What the status icon tells, as the lines of its native menu: the state, the first pull requests (those that ask for something
+come first, then the others in progress), a note on the rest.
 
 The pull requests and their labels are those of the window (`actions.status`): one source of truth. A row with a `target` leads
 to that pull request in the window; the others (state, headings, the note on the rest) are plain text, never clickable.
@@ -7,7 +7,7 @@ to that pull request in the window; the others (state, headings, the note on the
 
 from prwatch.actions import status as pwstatus
 
-# What asks something of the user, most urgent first; a watched pull request with nothing to do is not listed, only counted.
+# What asks something of the user, most urgent first; the other pull requests are listed after these.
 ACTIONS = ('attention', 'question', 'gave-up', 'ready', 'ticket-wait')
 SHOWN = 5  # pull requests listed; the menu would otherwise grow with the number of PRs
 # A coloured dot in front of each label: the native menu of the shell writes a line in plain text and puts the icon of an item at its far
@@ -58,21 +58,26 @@ def rows(running, scheduled_off, resumes, entries, active_sessions=None, suspens
     out = [{'kind': 'status', 'text': f'{DOTS[daemon_dot]} {daemon} · {DOTS[claude_dot]} {claude}', 'target': None, 'dots': [daemon_dot, claude_dot]}]
 
     pairs = [(entry, pwstatus.status(entry, None, cfg)) for entry in entries]
-    todo = sorted((p for p in pairs if p[1]['kind'] in ACTIONS), key=lambda p: ACTIONS.index(p[1]['kind']))  # stable: registry order
-    shown, hidden, others = todo[:SHOWN], len(todo) - len(todo[:SHOWN]), len(pairs) - len(todo)
+    # what asks something of the user comes first (most urgent first), then the other pull requests, finished ones last; both stable
+    order = lambda p: ACTIONS.index(p[1]['kind']) if p[1]['kind'] in ACTIONS else len(ACTIONS) + (p[1]['kind'] == 'done')  # noqa: E731
+    pairs.sort(key=order)
+    todo = [p for p in pairs if p[1]['kind'] in ACTIONS]
+    shown = pairs[:SHOWN]
+    hidden_todo = len(todo) - sum(1 for p in shown if p[1]['kind'] in ACTIONS)
+    hidden_others = len(pairs) - len(shown) - hidden_todo
     if not pairs:
         out.append({'kind': 'heading', 'text': 'Aucune pull request.', 'target': None})
     elif todo:
         out.append({'kind': 'heading', 'text': f'Pull requests ({len(pairs)}) · {len(todo)} à traiter :', 'target': None})
     else:
-        out.append({'kind': 'heading', 'text': 'Rien à traiter.', 'target': None})
+        out.append({'kind': 'heading', 'text': f'Pull requests ({len(pairs)}) · rien à traiter :', 'target': None})
     for entry, status in shown:
         out.append({'kind': 'pr', 'text': _line(entry, status), 'target': f"{entry['repo']}#{entry['pr']}"})
     notes = []
-    if hidden:
-        notes.append(f"{hidden} autre{'s' if hidden > 1 else ''} à traiter")
-    if others:
-        notes.append(f"{others} {'autre' + ('s' if others > 1 else '') + ' ' if shown else ''}en cours")
+    if hidden_todo:
+        notes.append(f"{hidden_todo} autre{'s' if hidden_todo > 1 else ''} à traiter")
+    if hidden_others:
+        notes.append(f"{hidden_others} autre{'s' if hidden_others > 1 else ''} en cours")
     if notes:
         out.append({'kind': 'more', 'text': '+ ' + ' · '.join(notes), 'target': None})
     return out

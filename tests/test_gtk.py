@@ -101,13 +101,13 @@ class StatusIconTest(unittest.TestCase):
         menu.update('\n'.join(row['text'] for row in rows), 'Désactiver la surveillance', self.gtkapp.Indicator._targets_of(rows))
         enabled = {props['label'].unpack(): props['enabled'].unpack() for _id, props in menu.items if 'label' in props}
         self.assertEqual({label: on for label, on in enabled.items() if not label.startswith(('Ouvrir', 'Désactiver', 'Quitter'))},
-                         {'🟢 Démon en route · 🟢 Claude activé': False, 'Pull requests (2) · 1 à traiter :': False, '• api #12 · fix — Prête à merger ✓': True, '+ 1 autre en cours': False})
+                         {'🟢 Démon en route · 🟢 Claude activé': False, 'Pull requests (2) · 1 à traiter :': False, '• api #12 · fix — Prête à merger ✓': True, '• web #3 — Surveillée': True})
         self.assertTrue(all(enabled[label] for label in ('Ouvrir le tableau de bord', 'Désactiver la surveillance', 'Quitter PR Watch')))
         by_label = {props['label'].unpack(): item_id for item_id, props in menu.items if 'label' in props}
         with mock.patch.object(self.gtkapp.GLib, 'idle_add', side_effect=lambda fn, *args: fn(*args)):
-            for label in ('• api #12 · fix — Prête à merger ✓', '🟢 Démon en route · 🟢 Claude activé', 'Pull requests (2) · 1 à traiter :', '+ 1 autre en cours'):
+            for label in ('• api #12 · fix — Prête à merger ✓', '🟢 Démon en route · 🟢 Claude activé', 'Pull requests (2) · 1 à traiter :', '• web #3 — Surveillée'):
                 menu._on_method(None, None, None, None, 'Event', GLib.Variant('(isvu)', (by_label[label], 'clicked', GLib.Variant('s', ''), 0)), mock.Mock())
-        self.assertEqual(opened, ['api#12'], 'one line per listed pull request leads somewhere; the state, the heading and the note do nothing')
+        self.assertEqual(opened, ['api#12', 'web#3'], 'one line per listed pull request leads somewhere; the state and the heading do nothing')
 
     def test_a_menu_item_never_gets_an_id_the_shell_knew_for_something_else(self):
         menu = self.gtkapp.DBusMenu.__new__(self.gtkapp.DBusMenu)
