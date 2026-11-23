@@ -7,12 +7,14 @@ from pathlib import Path
 import urllib.parse
 
 from prwatch.actions import common as pwcommon
+from prwatch.core import bitbucket as pwbitbucket
 from prwatch.core import config as pwconfig
 from prwatch.core import permissions as pwperm
 from prwatch.integrations import plugins as pwplugins
 from prwatch.integrations import usage as pwusage
 from prwatch.actions import status as pwstatus
 from prwatch.core import store as pwstore
+from prwatch.engine import merging as pwmerging
 from prwatch.engine import service as pwservice
 from prwatch.system import host as pwhost
 from prwatch.system import notifications as pwnotifications
@@ -211,8 +213,30 @@ def load_profile(profile):
 
 
 def refresh():
-    """Asks the daemon to look at every pull request now (the dispatcher wakes it: see REFRESHING)."""
-    return pwcommon._result(True, 'Actualisation demandée.')
+    """Reads the title and the merge readiness of every watched pull request now (F5), in parallel, and wakes the daemon too.
+
+    The daemon may be in the middle of a slow cycle (Bitbucket timeouts): the list must not wait for it.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    cfg = pwconfig.config()
+    with pwstore.registry_lock():
+        entries = [e for e in pwstore.load_registry() if e.get('state', 'watching') == 'watching']
+
+    def look(entry):
+        try:
+            pr = pwbitbucket.api(f"{pwbitbucket.repo_path(entry)}/pullrequests/{entry['pr']}")
+            if pr and pr.get('state') == 'OPEN':
+                if entry.get('title') != pr['title']:
+                    pwstore.update_entry(entry, title=pr['title'])
+                pwmerging.sync_ready(entry, pr, cfg, False, announce=False)
+        except Exception as error:  # one PR must not stop the others
+            pwstore.log(f'{pwstore.key_of(entry)}: refresh: {type(error).__name__}: {error}')
+
+    if entries:
+        with ThreadPoolExecutor(max_workers=min(4, len(entries))) as pool:
+            list(pool.map(look, entries))
+    return pwcommon._result(True, 'Pull requests actualisées.')
 
 
 def open_link(url):

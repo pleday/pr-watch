@@ -98,7 +98,10 @@ def merge_is_pointless(blockers):
 
 
 def merge_blockers(entry, pr, cfg):
-    """What still prevents the merge: an empty list means the PR is approved, its pipelines passed and no task is open."""
+    """What still prevents the merge: an empty list means the PR is approved, its pipelines passed and no task is open.
+
+    None when Bitbucket could not answer about the pipelines (timeout, 503): the readiness is then unknown, not blocked.
+    """
     blockers = []
     participants = pr.get('participants', [])
     approvals = [p for p in participants if p.get('approved')]
@@ -110,7 +113,9 @@ def merge_blockers(entry, pr, cfg):
     if pr.get('task_count', 0):
         blockers.append(f"{pr['task_count']} tâche(s) ouverte(s)")
     head = pr['source']['commit']['hash']
-    data = pwbitbucket.api(f"{pwbitbucket.repo_path(entry)}/pipelines/", {'target.branch': entry['branch'], 'sort': '-created_on', 'pagelen': 10}) or {}
+    data = pwbitbucket.api(f"{pwbitbucket.repo_path(entry)}/pipelines/", {'target.branch': entry['branch'], 'sort': '-created_on', 'pagelen': 10})
+    if data is None:
+        return None
     for_head = [p for p in data.get('values', []) if ((p.get('target') or {}).get('commit') or {}).get('hash', '').startswith(head)]
     if not for_head:
         blockers.append('aucun pipeline sur le dernier commit')
@@ -127,14 +132,19 @@ def merge_blockers(entry, pr, cfg):
     return blockers
 
 
-def sync_ready(entry, pr, cfg, dry_run):
-    """Announces once that the PR can be merged, and forgets it when it can not any more (a new commit, a new comment)."""
+def sync_ready(entry, pr, cfg, dry_run, announce=True):
+    """Announces once that the PR can be merged, and forgets it when it can not any more (a new commit, a new comment).
+
+    `announce` False records the state without the notification (the user asked for a refresh and is looking at the window).
+    """
     blockers = merge_blockers(entry, pr, cfg)
+    if blockers is None:
+        return  # Bitbucket did not answer: keep what is known rather than showing a false blocker
     if dry_run:
         print(f"{pwstore.key_of(entry)}: {'ready to merge' if not blockers else 'blocked: ' + ', '.join(blockers)}")
         return
     if not blockers and not entry.get('readyNotified'):
-        if pwconfig.effective(entry, cfg)['handling']['ready'] == 'notify':
+        if announce and pwconfig.effective(entry, cfg)['handling']['ready'] == 'notify':
             title, where = pwwake.pr_notice(entry, pr, '✔ Prête à être mergée')
             pwwake.notify(title, where, cfg, entry=entry)
         pwstore.update_entry(entry, ready=True, readyNotified=True, mergeBlockers=[])

@@ -4,6 +4,9 @@
 
 ## Non publié
 
+- **F5 / Ctrl+R : l’état des PR est relu tout de suite.** L’actualisation lit elle-même chaque PR suivie (titre, approbations, pipelines) en parallèle au lieu d’attendre le démon, qui pouvait être au milieu d’un cycle ralenti par les erreurs de Bitbucket. Une PR prête à merger apparaît donc immédiatement.
+- **Une erreur de Bitbucket ne fabrique plus de faux blocage.** Quand la liste des pipelines n’a pas pu être lue (délai dépassé, 503), l’état « prête à merger » est conservé au lieu d’afficher « aucun pipeline sur le dernier commit ».
+
 ## 0.1.2 — 2026-11-23
 
 - **Icône de barre : les PR en cours sont listées, pas seulement celles qui demandent quelque chose.** Le menu montre les 5 premières PR : celles qui demandent une action en tête (dans le même ordre d’urgence), puis les autres en cours, les terminées en dernier. Chaque ligne ouvre la fenêtre sur la PR. Le reste est compté (« + 3 autres en cours »). Le nombre de lignes se règle dans Options › Général (`trayMaxPrs`, 5 par défaut, de 1 à 20). Sans rien à traiter, le titre devient « Pull requests (2) · rien à traiter : » au lieu de « Rien à traiter. » seul.

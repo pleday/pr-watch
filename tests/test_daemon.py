@@ -608,6 +608,15 @@ class ReadinessTest(unittest.TestCase):
         self.assertEqual(self.blockers(runs=((1, 'COMPLETED', 'FAILED', '**'), (2, 'COMPLETED', 'SUCCESSFUL', '**'))), [])
         self.assertEqual(self.blockers(runs=((2, 'COMPLETED', 'FAILED', '**'), (1, 'COMPLETED', 'SUCCESSFUL', '**'))), ['pipeline #2 en échec'])
 
+    def test_unreadable_pipelines_leave_the_readiness_unknown_not_blocked(self):
+        pr = {'participants': [{'approved': True}], 'task_count': 0, 'source': {'commit': {'hash': self.HEAD}}, 'destination': {'branch': {'name': 'develop'}}}
+        set_registry([entry(1)])
+        pwstore.update_entry(registry()[0], ready=True, readyNotified=True, mergeBlockers=[])
+        with mock.patch.object(pwbitbucket, 'api', return_value=None):
+            self.assertIsNone(pwmerging.merge_blockers({'repo': 'r', 'pr': 1, 'branch': 'b'}, pr, pwconfig.config()))
+            pwmerging.sync_ready(registry()[0], pr, pwconfig.config(), False)
+        self.assertTrue(registry()[0]['ready'])
+
     def test_the_announcement_comes_once_and_follows_the_setting(self):
         for setting, expected in (('notify', 1), ('ignore', 0)):
             with self.subTest(setting=setting):
