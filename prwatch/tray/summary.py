@@ -9,7 +9,7 @@ from prwatch.actions import status as pwstatus
 
 # What asks something of the user, most urgent first; the other pull requests are listed after these.
 ACTIONS = ('attention', 'question', 'gave-up', 'ready', 'ticket-wait')
-SHOWN = 5  # pull requests listed; the menu would otherwise grow with the number of PRs
+SHOWN = 5  # pull requests listed unless the option `trayMaxPrs` says otherwise; the menu would otherwise grow with the number of PRs
 # A coloured dot in front of each label: the native menu of the shell writes a line in plain text and puts the icon of an item at its far
 # right, so a coloured character is the only way to a dot beside its words.
 DOTS = {'green': '🟢', 'orange': '🟠', 'red': '🔴'}
@@ -62,7 +62,7 @@ def rows(running, scheduled_off, resumes, entries, active_sessions=None, suspens
     order = lambda p: ACTIONS.index(p[1]['kind']) if p[1]['kind'] in ACTIONS else len(ACTIONS) + (p[1]['kind'] == 'done')  # noqa: E731
     pairs.sort(key=order)
     todo = [p for p in pairs if p[1]['kind'] in ACTIONS]
-    shown = pairs[:SHOWN]
+    shown = pairs[:(cfg or {}).get('trayMaxPrs', SHOWN)]
     hidden_todo = len(todo) - sum(1 for p in shown if p[1]['kind'] in ACTIONS)
     hidden_others = len(pairs) - len(shown) - hidden_todo
     if not pairs:

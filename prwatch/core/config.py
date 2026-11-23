@@ -125,6 +125,8 @@ DEFAULT_CONFIG = {
     'usageSessionMarginPercent': 5,  # of the 5-hour session
     'usageWeekMarginPercent': 5,  # of the week
     # A pull request that was merged or declined stays in the list this many minutes, then leaves it (0 = it stays).
+    # How many pull requests the menu of the tray icon lists (those that ask for something first); the rest is counted.
+    'trayMaxPrs': 5,
     'removeDoneAfterMinutes': 60,
     # The actions shown as small buttons on a collapsed card: null = the ones that fit the state of the pull request
     # (actions.auto_quick_actions), else a list of 3 ids at most of actions.QUICK_ACTIONS. The others are in the card's menu.

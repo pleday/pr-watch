@@ -503,6 +503,17 @@ class QuestionAnswerTest(unittest.TestCase):
         self.assertEqual(actions.overview()['entries'][0]['pendingQuestions'][0]['id'], 9)
 
 
+class TrayMaxPrsTest(unittest.TestCase):
+    def test_the_option_defaults_to_5_and_stays_within_1_and_20(self):
+        reset_config()
+        self.assertEqual(pwconfig.config()['trayMaxPrs'], 5)
+        self.assertTrue(pwoptions.set_options({'trayMaxPrs': 8})['ok'])
+        self.assertEqual(pwconfig.config()['trayMaxPrs'], 8)
+        for bad in (0, 21, 'dix', True):
+            self.assertFalse(pwoptions.set_options({'trayMaxPrs': bad})['ok'], bad)
+        reset_config()
+
+
 class RemoveDoneTest(unittest.TestCase):
     def test_the_option_accepts_zero_for_never_and_refuses_the_rest(self):
         reset_config()

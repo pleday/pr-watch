@@ -128,6 +128,8 @@ const englishText = {
   'Évite que les réveils piochent dans les crédits de dépassement ; repart tout seul à la remise à zéro.': 'Prevents wake-ups from using overage credits; Claude resumes automatically when the quota resets.',
   'Seuil de la session de 5 h : désactiver quand il reste moins de … %': '5-hour session threshold: pause when less than …% remains',
   'Seuil de la semaine : désactiver quand il reste moins de … %': 'Weekly threshold: pause when less than …% remains',
+  'Pull requests listées dans le menu de l’icône de barre': 'Pull requests listed in the tray icon menu',
+  '1 à 20 ; celles qui demandent quelque chose passent en premier': '1 to 20; those that ask for something come first',
   'Retirer de la liste une PR fusionnée ou refusée après (minutes)': 'Remove a merged or declined PR from the list after (minutes)',
   '0 = jamais': '0 = never',
   'Espace Bitbucket (workspace)': 'Bitbucket workspace',

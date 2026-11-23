@@ -29,6 +29,7 @@ OPTIONS = {
     'usageGuard': ('bool',),
     'usageSessionMarginPercent': ('int', 0, 50),
     'usageWeekMarginPercent': ('int', 0, 50),
+    'trayMaxPrs': ('int', 1, 20),  # pull requests listed in the menu of the tray icon
     'removeDoneAfterMinutes': ('int', 0, 43200),  # 0 = a finished PR stays in the list
     # What depends on the team (Bitbucket workspace, Jira site and field, quality tool, where the clones are): see `validate_text`.
     'bitbucketWorkspace': ('text', 'workspace'),

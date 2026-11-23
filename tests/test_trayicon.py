@@ -1,5 +1,6 @@
 import unittest
 
+from prwatch.core import config as pwconfig
 from prwatch.tray import icon as trayicon
 from prwatch.tray import summary as traysummary
 
@@ -66,6 +67,7 @@ class TrayIconTest(unittest.TestCase):
         lines = traysummary.tooltip_text(True, False, None, entries).splitlines()
         self.assertEqual([line.split(' — ')[0] for line in lines[2:]], ['• a #3 · broken', '• a #2', '• a #4', '• a #1'], 'attention first, finished last')
         many = [{'repo': 'a', 'pr': n, 'state': 'watching'} for n in range(1, 9)]
+        self.assertEqual(traysummary.tooltip_text(True, False, None, many, cfg={**pwconfig.config(), 'trayMaxPrs': 7}).splitlines()[-1], '+ 1 autre en cours', 'the option sets how many are listed')
         self.assertEqual(traysummary.tooltip_text(True, False, None, many).splitlines()[-1], '+ 3 autres en cours')
 
     def test_nothing_to_do_and_no_pull_request(self):

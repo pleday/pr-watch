@@ -97,6 +97,7 @@ export const OPTION_FIELDS = [
   ['usageGuard', 'checkbox', 'Se désactiver quand le forfait Claude est presque épuisé', 'Évite que les réveils piochent dans les crédits de dépassement ; repart tout seul à la remise à zéro.', 'usage'],
   ['usageSessionMarginPercent', 'number', 'Seuil de la session de 5 h : désactiver quand il reste moins de … %', '0 à 50', 'usage'],
   ['usageWeekMarginPercent', 'number', 'Seuil de la semaine : désactiver quand il reste moins de … %', '0 à 50', 'usage'],
+  ['trayMaxPrs', 'number', 'Pull requests listées dans le menu de l’icône de barre', '1 à 20 ; celles qui demandent quelque chose passent en premier', 'general'],
   ['removeDoneAfterMinutes', 'number', 'Retirer de la liste une PR fusionnée ou refusée après (minutes)', '0 = jamais', 'general'],
   ['bitbucketWorkspace', 'text', 'Espace Bitbucket (workspace)', 'Le nom qui précède le dépôt dans l’adresse de vos pull requests. Obligatoire : tant qu’il est vide, rien n’est surveillé.', 'team', 'Exemple : pour https://bitbucket.org/acme-corp/api-server/pull-requests/12, saisissez acme-corp.', 'acme-corp'],
   ['jiraSite', 'text', 'Site Jira', 'L’adresse de votre Jira Cloud, utilisée pour lire un ticket et changer son état. Vide : aucun lien ni action sur les tickets.', 'team', 'Exemple : https://acme-corp.atlassian.net', 'https://acme-corp.atlassian.net'],
