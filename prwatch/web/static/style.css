@@ -223,6 +223,7 @@ textarea.drafting { background-image: linear-gradient(90deg, transparent, color-
 textarea { font: inherit; width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); resize: vertical; }
 .column { display: flex; flex-direction: column; gap: 6px; }
 .banner.notice > span { flex: 1 1 14em; min-width: 0; }
+#tab-prs > .banner.notice { margin: 12px 0; padding: 12px 16px; line-height: 1.45; }  /* alone in the tab they would stick to the tabs and to the filter bar */
 .banner.notice > .btn { flex: none; }
 .app.recommended { border-color: var(--blue); }
 .app .tag { display: block; margin-top: 2px; font-size: 11px; font-weight: 700; color: var(--blue); }
