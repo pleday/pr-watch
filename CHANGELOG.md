@@ -4,6 +4,8 @@
 
 ## Non publié
 
+- **Ajout d’une PR : un seul ascenseur.** La liste des sessions Claude n’a plus son propre ascenseur imbriqué dans celui de la boîte de dialogue ; seul le corps de la boîte défile, titre et boutons restent visibles.
+
 ## 0.1.3 — 2026-11-23
 
 - **Messages : bouton « Copier ».** Chaque message affiché en bas à droite porte un bouton de copie (le texte part dans le presse-papiers, l’icône devient une coche). Le message ne disparaît plus tant que le pointeur est dessus.
@@ -60,6 +62,8 @@
 # Changelog (English)
 
 ## Unreleased
+
+- **Adding a PR: a single scrollbar.** The list of Claude sessions no longer has its own scrollbar nested in the one of the dialog; only the body of the dialog scrolls, title and buttons stay visible.
 
 ## 0.1.3 — 2026-11-23
 

@@ -143,7 +143,7 @@ dialog h2 { margin: 0 0 8px; font-size: 17px; }
 #dialog[open] { display: flex; flex-direction: column; max-height: 88vh; }
 #dialog h2, #dialog .buttons { flex: none; }
 dialog .body { margin: 8px 0 14px; }
-#dialog .body { flex: 1 1 auto; min-height: 0; overflow: auto; padding-right: 4px; }
+#dialog .body { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; padding-right: 4px; }
 dialog pre { max-height: 50vh; overflow: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
 dialog .row { display: flex; flex-direction: column; gap: 10px; margin: 10px 0; }
 dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; }
@@ -238,7 +238,8 @@ textarea { font: inherit; width: 100%; box-sizing: border-box; padding: 8px 10px
 .card[hidden] { display: none; }
 dialog .inline { display: flex; gap: 8px; }
 dialog .inline input { flex: 1; min-width: 0; }
-.sessions { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow: auto; }
+/* No scrollbar of its own: the dialog body already scrolls, a second one nested inside it is confusing. */
+.sessions { display: flex; flex-direction: column; gap: 6px; }
 .session { display: flex; gap: 8px; align-items: baseline; cursor: pointer; }
 dialog .row .btn.primary { align-self: flex-start; }
 
