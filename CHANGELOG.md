@@ -4,6 +4,8 @@
 
 ## Non publié
 
+## 0.1.4 — 2026-11-24
+
 - **Option « Ouvrir le tableau de bord dans un onglet du navigateur ».** Dans Options › Général : au lieu de la fenêtre dédiée, PR Watch s’ouvre dans le navigateur par défaut.
   - Cocher ou décocher l’option propose de fermer la fenêtre en cours pour ouvrir la nouvelle, ou d’annuler (rien n’est alors changé). Un onglet ouvert à la main ne peut pas toujours être fermé par la page : il faut alors le fermer soi-même.
   - Un seul onglet : tant qu’une page du tableau de bord est ouverte dans le navigateur (même depuis un favori), une nouvelle demande d’ouverture (icône de barre, notification, `pr-watch ui`) la réutilise au lieu d’en ouvrir une autre. Un onglet fermé qui n’a pas pu le signaler est reconnu en quelques secondes (jusqu’à 6 s d’attente).
@@ -70,6 +72,8 @@
 # Changelog (English)
 
 ## Unreleased
+
+## 0.1.4 — 2026-11-24
 
 - **Option "Open the dashboard in a browser tab".** In Settings › General: instead of the dedicated window, PR Watch opens in the default browser.
   - Ticking or unticking the option offers to close the current window to open the new one, or to cancel (nothing is changed then). A tab opened by hand cannot always be closed by the page: close it yourself in that case.
