@@ -42,6 +42,12 @@ export function setExpanded(article, open) {
   try { localStorage.setItem('pw-expanded', JSON.stringify([...expandedCards])); } catch (error) { /* the cards just start collapsed next time */ }
 }
 
+/** What the "action done" chip stands for, one line per action (older pull requests only kept the last one). */
+function activityLines(activity) {
+  const items = activity.items?.length ? activity.items : [{ text: activity.text, at: activity.at }];
+  return items.map((item) => `${formatDateTime(item.at)} — ${item.text}${item.detail ? ` : ${item.detail}` : ''}`);
+}
+
 export function cardActions(entry) {
   const done = entry.state === 'done';
   const target = { repo: entry.repo, pr: entry.pr };
@@ -102,7 +108,7 @@ export function card(entry, state) {
       h('span', { class: 'card-title' }, entry.title || ''),
       h('span', { class: `chip ${kind}`, title: entry.status.tip }, label),
       S.focusKey === `${entry.repo}#${entry.pr}` ? h('span', { class: 'chip notified', title: 'Vous êtes arrivé ici depuis une notification.' }, '🔔 Notification') : null,
-      entry.activity ? h('button', { class: 'chip acted', type: 'button', title: `${entry.activity.text} (${formatDateTime(entry.activity.at)}) — cliquer pour tout marquer comme vu`, onclick: () => act('acknowledge', target) }, entry.activity.count > 1 ? `● Action faite ×${entry.activity.count}` : '● Action faite') : null,
+      entry.activity ? h('button', { class: 'chip acted', type: 'button', title: `${activityLines(entry.activity).join('\n')}\n\nCliquer pour tout marquer comme vu`, onclick: () => act('acknowledge', target) }, entry.activity.count > 1 ? `● Action faite ×${entry.activity.count}` : '● Action faite') : null,
       entry.status.unpushed ? h('span', { class: 'chip unpushed', title: `${entry.status.unpushed} : le bouton « Pousser » les envoie sur la PR.` }, '⬆ À pousser') : null,
       h('span', { class: 'mini-actions' }, ...quick.map(mini), others.length ? moreMenu(others) : null)),
     entry.needsAttention ? h('div', { class: 'banner', role: 'alert' }, `⚠ ${entry.needsAttention}`) : null,

@@ -8,6 +8,7 @@ from prwatch.engine import service as pwservice
 from prwatch.system import notifications as pwnotifications
 from prwatch.actions import sessions as pwsessions
 from prwatch.actions import tickets as pwtickets
+from prwatch.core import store as pwstore
 
 # action name -> (function, fields it needs from the request)
 ACTIONS = {
@@ -94,6 +95,10 @@ def perform(request):
     # Whatever the user does about a pull request settles its notification: one click, however many events piled up.
     if result.get('ok') and name not in READING and isinstance(arguments.get('repo'), str) and 'pr' in arguments:
         pwnotifications.close_group(f"{arguments['repo']}#{arguments['pr']}")
+        # ...and so does the "action done" chip of its card: no need to click it once the user has acted themselves
+        entry = pwcommon._entry(arguments['repo'], arguments['pr'])
+        if entry and entry.get('activity'):
+            pwstore.update_entry(entry, activity=None)
     # What the action changed is read back from Bitbucket at once, not at the end of the daemon's sleep.
     if name in REFRESHING and result.get('ok'):
         pwservice.request_cycle()

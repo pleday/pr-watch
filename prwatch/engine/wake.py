@@ -171,6 +171,9 @@ def wake_claude(entry, pr, events, cfg, dry_run):
     return not failed, text
 
 
+MAX_ACTIVITY_ITEMS = 10
+
+
 def notify(title, body, cfg, urgent=False, entry=None):
     """Journals a notification and shows it; with `entry`, a click on it opens that pull request in the PR Watch window."""
     key = pwstore.key_of(entry) if entry and entry.get('repo') else None
@@ -179,7 +182,11 @@ def notify(title, body, cfg, urgent=False, entry=None):
         # what the card shows as "something was done here" until the user has seen it
         previous = entry.get('activity')
         count = ((previous.get('count') or 1) if previous else 0) + 1
-        pwstore.update_entry(entry, activity={'text': title, 'at': int(time.time() * 1000), 'count': count})
+        now = int(time.time() * 1000)
+        # what was done, kept for the tooltip of the card (the first line of the body only names the PR)
+        done = {'text': title, 'detail': ' '.join(body.splitlines()[1:]), 'at': now}
+        items = ((previous.get('items') or []) if previous else [])[-(MAX_ACTIVITY_ITEMS - 1):] + [done]
+        pwstore.update_entry(entry, activity={'text': title, 'at': now, 'count': count, 'items': items})
     lines = body.splitlines()
     pwstore.log(f"{key + ': ' if key else ''}NOTIFY {title}: {' '.join(lines[1:]) if key and len(lines) > 1 else body}")
     if cfg['notify']:

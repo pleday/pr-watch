@@ -110,7 +110,20 @@ class RegistryActionsTest(unittest.TestCase):
         with mock.patch.object(pwnotifications, 'notify'):
             pwwake.notify('✔ Traitée par Claude', 'fake-repo #1', pwconfig.config(), entry=registry()[0])
         self.assertEqual(registry()[0]['activity']['count'], 2)
+        with mock.patch.object(pwnotifications, 'notify'):
+            pwwake.notify('✔ Mergée', 'fake-repo #1\nStratégie : squash.', pwconfig.config(), entry=registry()[0])
+        items = registry()[0]['activity']['items']
+        self.assertEqual([i['text'] for i in items], ['✔ Traitée par Claude', '✔ Traitée par Claude', '✔ Mergée'])
+        self.assertEqual(items[-1]['detail'], 'Stratégie : squash.')
         pwpr.acknowledge('fake-repo', 1)  # one click settles every action of the pull request
+        self.assertIsNone(registry()[0]['activity'])
+
+    def test_acting_on_a_pull_request_clears_its_action_done_chip(self):
+        with mock.patch.object(pwnotifications, 'notify'):
+            pwwake.notify('✔ Traitée par Claude', 'fake-repo #1', pwconfig.config(), entry=registry()[0])
+        actions.perform({'action': 'ticket-info', 'repo': 'fake-repo', 'pr': 1})  # reading does not settle anything
+        self.assertTrue(registry()[0]['activity'])
+        self.assertTrue(actions.perform({'action': 'read-reports', 'repo': 'fake-repo', 'pr': 1})['ok'])
         self.assertIsNone(registry()[0]['activity'])
 
     def test_merge_is_pointless_when_bitbucket_would_refuse_it(self):

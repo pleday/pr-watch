@@ -4,6 +4,8 @@
 
 ## Non publié
 
+- **« Action faite » : l’info-bulle liste les actions.** Elle indique, une ligne par action (heure, ce qui a été fait, détail), tout ce que Claude ou PR Watch a fait depuis votre dernier passage (les 10 dernières).
+- **« Action faite » s’efface tout seul.** Dès que vous agissez sur la PR (ouvrir la session, lire le rapport, pousser, merger, changer le ticket…), la pastille de la carte disparaît ; plus besoin de cliquer dessus.
 - **Rapports non lus : pastille sur le bouton « Dernier rapport ».** Le bouton affiche le nombre de rapports générés depuis la dernière ouverture ; l’info-bulle donne le total. Ouvrir le rapport remet le compteur à 0.
 - **Ajout d’une PR : un seul ascenseur.** La liste des sessions Claude n’a plus son propre ascenseur imbriqué dans celui de la boîte de dialogue ; seul le corps de la boîte défile, titre et boutons restent visibles.
 
@@ -64,6 +66,8 @@
 
 ## Unreleased
 
+- **"Action done": the tooltip lists the actions.** One line per action (time, what was done, detail): everything Claude or PR Watch did since your last visit (the last 10).
+- **"Action done" clears by itself.** As soon as you act on the PR (open the session, read the report, push, merge, change the ticket…), the pill of the card disappears; no need to click it.
 - **Unread reports: badge on the "Last report" button.** The button shows the number of reports generated since it was last opened; the tooltip gives the total. Opening the report resets the counter to 0.
 - **Adding a PR: a single scrollbar.** The list of Claude sessions no longer has its own scrollbar nested in the one of the dialog; only the body of the dialog scrolls, title and buttons stay visible.
 
