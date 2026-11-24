@@ -87,10 +87,27 @@ export async function checkPlugins() {
   if (result.ok) { S.pluginLines = result.plugins; renderPluginBanner(); }
 }
 
+/** Asks before the dashboard moves to a browser tab (or back to its own window): the window in use is then closed. */
+function switchDisplay(inBrowser) {
+  return confirmDialog(
+    inBrowser ? 'Ouvrir dans le navigateur ?' : 'Ouvrir dans une fenêtre dédiée ?',
+    inBrowser ? 'PR Watch va s’ouvrir dans un onglet de votre navigateur et cette fenêtre se fermera.' : 'PR Watch va s’ouvrir dans sa propre fenêtre et cet onglet se fermera.',
+    inBrowser ? 'Fermer cette fenêtre et ouvrir l’onglet' : 'Fermer cet onglet et ouvrir la fenêtre',
+    'primary');
+}
+
+/** Opens the dashboard the new way, then closes this one (a browser lets a script close only the windows it opened). */
+async function leaveForNewDisplay() {
+  const result = await askServer('open-dashboard');
+  if (!result.ok) { toast(result.message || 'Échec.', true); return; }
+  setTimeout(() => { globalThis.close(); setTimeout(() => toast('Le navigateur ne laisse pas fermer cet onglet : fermez-le vous-même.'), 500); }, 1200);
+}
+
 export const OPTION_FIELDS = [
   ['autoPush', 'checkbox', 'Les corrections poussent automatiquement sur la branche', 'Sinon la session réveillée s’arrête au commit.', 'general'],
   ['keepUntilTicketValidated', 'checkbox', 'Garder une PR mergée tant que son ticket Jira n’a pas changé d’état', 'Elle passe en « en attente de validation du ticket » ; avec plusieurs PR sur un ticket, c’est la dernière mergée qui attend.', 'general'],
   ['notify', 'checkbox', 'Notifications de bureau', '', 'general'],
+  ['dashboardInBrowser', 'checkbox', 'Ouvrir le tableau de bord dans un onglet du navigateur', 'Au lieu d’une fenêtre dédiée ; si un onglet de PR Watch est déjà ouvert, il est réutilisé au lieu d’en ouvrir un autre.', 'general'],
   ['pollSeconds', 'number', 'Intervalle de surveillance (s)', '15 à 900', 'general'],
   ['maxAttempts', 'number', 'Essais automatiques maximum par PR', '1 à 20', 'general'],
   ['minApprovals', 'number', 'Approbations avant « prête à merger »', '0 à 10', 'general'],
@@ -249,8 +266,10 @@ export function renderOptions(values, categories, quickChoices, maxQuick, autoMe
     const read = () => (type === 'checkbox' ? input.checked : type === 'number' ? Number.parseInt(input.value, 10)
       : type === 'lines' ? input.value.split('\n').map((line) => line.trim()).filter(Boolean) : input.value);
     input.addEventListener('change', async () => {
+      if (name === 'dashboardInBrowser' && !(await switchDisplay(input.checked))) { input.checked = !input.checked; return; }
       const result = await act('options', { values: { [name]: read() } });
-      if (!result.ok) { S.optionsKey = ''; S.refresh(true); }  // back to what is stored
+      if (!result.ok) { S.optionsKey = ''; S.refresh(true); return; }  // back to what is stored
+      if (name === 'dashboardInBrowser') leaveForNewDisplay();
     });
     return h('label', { class: 'option' }, h('span', {}, label, hint ? h('div', { class: 'hint' }, hint) : null, example ? h('div', { class: 'hint example' }, example) : null), input);
   };

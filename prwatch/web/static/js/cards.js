@@ -165,9 +165,71 @@ function pulse(key) {
   globalThis.focus();
 }
 
+let calling = false;
+
+// The icon of the page with a small bell badge in a corner, built from the icon itself (read once, when first needed).
+let dottedIcon = null;
+async function iconWithDot() {
+  if (dottedIcon) return dottedIcon;
+  const svg = await (await fetch('/static/icon.svg')).text();
+  const bell = '<circle cx="50" cy="14" r="13" fill="#f5a524" stroke="#fff" stroke-width="2.5"/><path d="M50 7a5 5 0 0 0-5 5v3l-1.8 2.8h13.6L55 15v-3a5 5 0 0 0-5-5zM48 19.5a2 2 0 0 0 4 0z" fill="#fff"/>';
+  dottedIcon = `data:image/svg+xml,${encodeURIComponent(svg.replace('</svg>', `${bell}</svg>`))}`;
+  return dottedIcon;
+}
+
+/** The dashboard was asked to open and this tab is not in front: use what the browser itself offers to call the user back.
+ *
+ * Nothing in a page can raise its own tab, so, discreetly: a bell in front of the title and a small amber bell badge in a corner of the icon (no
+ * blinking), until the tab is looked at again, and a system notification of the browser, whose click does bring the tab
+ * forward, when the user allowed them.
+ */
+async function callAttention() {
+  if (document.hasFocus() && !document.hidden) return;
+  notifyTab();
+  if (calling) return;
+  calling = true;
+  const mark = '🔔 ';
+  const link = document.querySelector('link[rel="icon"]');
+  const normalIcon = link?.href;
+  const stop = () => {
+    calling = false;
+    clearInterval(keep);
+    if (document.title.startsWith(mark)) document.title = document.title.slice(mark.length);
+    if (link && normalIcon) link.href = normalIcon;
+    document.removeEventListener('visibilitychange', onBack);
+    globalThis.removeEventListener('focus', onBack);
+  };
+  const onBack = () => { if (document.hasFocus() && !document.hidden) stop(); };
+  document.addEventListener('visibilitychange', onBack);
+  globalThis.addEventListener('focus', onBack);
+  const dot = await iconWithDot().catch(() => null);
+  // the page rewrites its title when the number of pull requests to look at changes: the dot is put back
+  const show = () => { if (!document.title.startsWith(mark)) document.title = mark + document.title; if (link && dot) link.href = dot; };
+  const keep = setInterval(show, 1000);
+  show();
+}
+
+/** A notification of the browser (when the user allowed them): clicking it is what lets the page take the focus back. */
+function notifyTab() {
+  try {
+    if (!('Notification' in globalThis) || Notification.permission !== 'granted') return;
+    const notice = new Notification('PR Watch', { body: 'Cliquez pour revenir au tableau de bord.', tag: 'pr-watch-open', icon: '/static/icon.svg' });
+    notice.onclick = () => { globalThis.focus(); notice.close(); };
+    setTimeout(() => notice.close(), 8000);
+  } catch { /* the flashing title and icon remain */ }
+}
+
+/** Asks the browser, from a click in the tab itself (never in a window about to close), to allow those notifications. */
+export function allowTabNotifications() {
+  try { if ('Notification' in globalThis && Notification.permission === 'default') return Notification.requestPermission(); } catch { /* not offered */ }
+  return Promise.resolve();
+}
+
 export function applyFocus(focus) {
   if (!focus || focus.at === S.lastFocusAt || focus.at < loadedAt - 30000) return;
   S.lastFocusAt = focus.at;
+  globalThis.focus();  // an open request: a browser tab may not come forward by itself, but it is the best it can do
+  callAttention();
   if (!focus.key) return;
   if (focus.source === 'tray') { pulse(focus.key); return; }
   selectTab('prs');

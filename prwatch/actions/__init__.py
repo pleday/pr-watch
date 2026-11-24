@@ -7,5 +7,5 @@ This is the front door: the work is in `status` (what is shown), `forms`, `pr`, 
 `common`, and `dispatch` (the table of actions).
 """
 from .dispatch import perform  # noqa: F401
-from .pr import focus, set_focus  # noqa: F401
+from .pr import focus, set_focus, tab_is_open  # noqa: F401
 from .status import journal, overview  # noqa: F401

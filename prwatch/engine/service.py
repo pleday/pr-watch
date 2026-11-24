@@ -14,6 +14,7 @@ from prwatch.system import desktop as pwdesktop
 from prwatch.core import store as pwstore
 from prwatch.engine import wake as pwwake
 from prwatch.system import host as pwhost
+from prwatch.system import notifications as pwnotifications
 from prwatch.system import window as pwwindow
 from prwatch.engine import cycle as pwcycle
 
@@ -175,7 +176,11 @@ def open_dashboard(open_window=True, select=None, pulse=False):
     # request of the click's own action, which arrives within the same second.
     if select or not (recent and recent['key'] and time.time() * 1000 - recent['at'] < 15000):
         actions.set_focus(select or '', 'tray' if pulse else 'notification')
-    if open_window:
+    if open_window and pwconfig.config()['dashboardInBrowser']:
+        # a tab that is already showing the dashboard picks up the request above by itself: no second tab
+        if not actions.tab_is_open():
+            pwnotifications.open_url(url)
+    elif open_window:
         pwwindow.open_app_window(url, pwstore.DIR / 'chrome')
     if not open_window:
         print(url)

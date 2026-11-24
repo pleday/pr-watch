@@ -32,6 +32,61 @@ def focus():
         return None
 
 
+TAB_FILE = 'tab.json'
+
+# A tab hidden for a long time wakes its timers only about once a minute: it still counts as open for a bit longer than that.
+TAB_FRESH_SECONDS = 150
+
+
+def tab_seen(tab):
+    """The page of a browser tab says it is there (with each refresh): `pr-watch ui` then has no need to open another."""
+    if not isinstance(tab, str) or not 0 < len(tab) <= 40:
+        return
+    pwstore.DIR.mkdir(parents=True, exist_ok=True)
+    (pwstore.DIR / TAB_FILE).write_text(json.dumps({'tab': tab, 'at': time.time()}), encoding='utf-8')
+
+
+def tab_closed(tab):
+    """The tab was closed or left: forgotten, unless another tab has taken its place since."""
+    try:
+        known = json.loads((pwstore.DIR / TAB_FILE).read_text(encoding='utf-8'))
+        if known.get('tab') == tab:
+            (pwstore.DIR / TAB_FILE).unlink()
+    except (OSError, ValueError, AttributeError):
+        pass
+    return pwcommon._result(True, '')
+
+
+def tab_age():
+    """Seconds since a browser tab last showed the dashboard, None when none is known."""
+    try:
+        return time.time() - float(json.loads((pwstore.DIR / TAB_FILE).read_text(encoding='utf-8'))['at'])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+# A page that is open polls every 3 s: a signal older than this may come from a tab closed since, so it is asked to answer.
+TAB_ALIVE_SECONDS = 6
+
+
+def tab_is_open(wait=True):
+    """Whether a browser tab is showing the dashboard right now.
+
+    A closed tab cannot always say so (the browser may drop its last message), and a hidden one polls only slowly: a signal
+    that is not recent is not believed: the tab has a few seconds to give a new one (a live page polls every 3 s).
+    """
+    age = tab_age()
+    if age is None or age > TAB_FRESH_SECONDS:
+        return False
+    if age < TAB_ALIVE_SECONDS:
+        return True
+    for _ in range(2 * TAB_ALIVE_SECONDS if wait else 0):
+        time.sleep(0.5)
+        if (tab_age() or TAB_FRESH_SECONDS) < age:
+            return True
+    return False
+
+
 QUIT_FILE = 'quit.json'
 
 

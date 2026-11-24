@@ -25,6 +25,7 @@ OPTIONS = {
     'keepUntilTicketValidated': ('bool',),
     'autoMerge': ('choice', [m for m, _ in pwconfig.AUTO_MERGE_MODES]),
     'notify': ('bool',),
+    'dashboardInBrowser': ('bool',),
     'pollSeconds': ('int', 15, 900),
     'maxAttempts': ('int', 1, 20),
     'minApprovals': ('int', 0, 10),
@@ -253,6 +254,14 @@ def open_link(url):
     if not parsed or parsed.scheme not in ('http', 'https') or not parsed.netloc or len(url) > 2000:
         return pwcommon._result(False, 'Seules les adresses http et https sont ouvertes.')
     pwnotifications.open_url(url)
+    return pwcommon._result(True, '')
+
+
+def open_dashboard():
+    """Opens the dashboard the way the options say (the switch of `dashboardInBrowser` asks for it before closing its own page)."""
+    from prwatch.engine import service as pwservice
+
+    pwservice.open_dashboard()
     return pwcommon._result(True, '')
 
 

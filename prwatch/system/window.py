@@ -28,6 +28,11 @@ def chromium_candidates():
 WEB_WINDOW_CLASS = 'chrome-127.0.0.1__-Default'
 
 
+def app_window_address(url):
+    """The address of the application window: `app=1` is how the page knows it is not a browser tab to be reused."""
+    return url + ('&' if '?' in url else '?') + 'app=1'
+
+
 def app_window_command(url, profile=None):
     """A Chromium-based browser opened in 'app' mode (a window with no tabs or address bar), or None when there is none.
 
@@ -36,7 +41,7 @@ def app_window_command(url, profile=None):
     """
     for exe in chromium_candidates():
         if os.path.exists(exe):
-            command = [exe, f'--app={url}', '--window-size=1180,780', '--no-first-run', '--no-default-browser-check']
+            command = [exe, f'--app={app_window_address(url)}', '--window-size=1180,780', '--no-first-run', '--no-default-browser-check']
             if profile:
                 command.append(f'--user-data-dir={profile}')
             if pwhost.SYSTEM == 'linux':

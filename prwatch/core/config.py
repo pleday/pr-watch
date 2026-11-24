@@ -116,6 +116,8 @@ DEFAULT_CONFIG = {
     # ends with this signature, which is how the daemon tells them from what the author wrote and does not wake itself on them.
     'claudeReplyMarker': '— 🤖 Claude',
     'notify': True,
+    # Show the dashboard in a tab of the default browser instead of an application window; a tab that is already open is reused.
+    'dashboardInBrowser': False,
     # PR Watch stops waking Claude when the 5-hour session or the week of the plan has this much (%) or less left, so that the
     # woken sessions never dip into the paid overage credits; it starts again by itself when the window starts over.
     # `usageGuard` false turns the check off altogether.

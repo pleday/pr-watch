@@ -4,6 +4,11 @@
 
 ## Non publié
 
+- **Option « Ouvrir le tableau de bord dans un onglet du navigateur ».** Dans Options › Général : au lieu de la fenêtre dédiée, PR Watch s’ouvre dans le navigateur par défaut.
+  - Cocher ou décocher l’option propose de fermer la fenêtre en cours pour ouvrir la nouvelle, ou d’annuler (rien n’est alors changé). Un onglet ouvert à la main ne peut pas toujours être fermé par la page : il faut alors le fermer soi-même.
+  - Un seul onglet : tant qu’une page du tableau de bord est ouverte dans le navigateur (même depuis un favori), une nouvelle demande d’ouverture (icône de barre, notification, `pr-watch ui`) la réutilise au lieu d’en ouvrir une autre. Un onglet fermé qui n’a pas pu le signaler est reconnu en quelques secondes (jusqu’à 6 s d’attente).
+  - Si l’onglet est caché ou la fenêtre du navigateur en arrière-plan, la demande l’annonce sans clignoter : une clochette 🔔 devant le titre et un petit badge ambré sur l’icône, jusqu’à ce qu’on revienne dessus.
+  - Un bandeau propose, une fois et dans l’onglet, d’autoriser les notifications du navigateur : une notification dont le clic ramène l’onglet au premier plan (une page ne peut pas le faire seule).
 - **« Action faite » : l’info-bulle liste les actions.** Elle indique, une ligne par action (heure, ce qui a été fait, détail), tout ce que Claude ou PR Watch a fait depuis votre dernier passage (les 10 dernières).
 - **« Action faite » s’efface tout seul.** Dès que vous agissez sur la PR (ouvrir la session, lire le rapport, pousser, merger, changer le ticket…), la pastille de la carte disparaît ; plus besoin de cliquer dessus.
 - **Rapports non lus : pastille sur le bouton « Dernier rapport ».** Le bouton affiche le nombre de rapports générés depuis la dernière ouverture ; l’info-bulle donne le total. Ouvrir le rapport remet le compteur à 0.
@@ -66,6 +71,11 @@
 
 ## Unreleased
 
+- **Option "Open the dashboard in a browser tab".** In Settings › General: instead of the dedicated window, PR Watch opens in the default browser.
+  - Ticking or unticking the option offers to close the current window to open the new one, or to cancel (nothing is changed then). A tab opened by hand cannot always be closed by the page: close it yourself in that case.
+  - A single tab: as long as a dashboard page is open in the browser (even from a bookmark), a new request to open it (tray icon, notification, `pr-watch ui`) reuses it instead of opening another. A closed tab that could not say so is recognised within a few seconds (up to 6 s of waiting).
+  - When the tab is hidden or the browser window is in the background, the request signals it without blinking: a bell 🔔 in front of the title and a small amber badge on the icon, until you come back to it.
+  - A banner offers, once and in the tab, to allow browser notifications: a notification whose click brings the tab to the front (a page cannot do it by itself).
 - **"Action done": the tooltip lists the actions.** One line per action (time, what was done, detail): everything Claude or PR Watch did since your last visit (the last 10).
 - **"Action done" clears by itself.** As soon as you act on the PR (open the session, read the report, push, merge, change the ticket…), the pill of the card disappears; no need to click it.
 - **Unread reports: badge on the "Last report" button.** The button shows the number of reports generated since it was last opened; the tooltip gives the total. Opening the report resets the counter to 0.

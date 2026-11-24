@@ -1,5 +1,5 @@
 // The entry of the page: it draws the state the server sends, wires the tabs and starts the periodic refresh.
-import { applyFilter, applyFocus, card, setExpanded } from './cards.js';
+import { allowTabNotifications, applyFilter, applyFocus, card, setExpanded } from './cards.js';
 import { S, act, ask, askServer, call, confirmDialog, h, icon, toast, token } from './core.js';
 import { addPrDialog, usageDialog, usageLevel } from './dialogs.js';
 import { refreshLog, renderLogPrs, selectTab } from './journal.js';
@@ -122,6 +122,7 @@ function renderState(state) {
   if (!bitbucket.hidden) {
     bitbucket.replaceChildren(h('span', {}, state.bitbucket.lastOk ? t('bitbucket.down', { at: formatDateTime(state.bitbucket.lastOk) }) : t('bitbucket.downNever')));
   }
+  renderAlertsBanner();
   const suspension = document.getElementById('suspension');
   suspension.hidden = !state.suspension;
   if (state.suspension) {
@@ -148,9 +149,36 @@ function renderState(state) {
   if (state.quit && state.quit.at > performance.timeOrigin) globalThis.close();
 }
 
+// The page tells the server it is open, so that `pr-watch ui` (option "in the browser") reuses this tab instead of opening another.
+const tabId = Math.random().toString(36).slice(2);
+// Every page registers except the application window, which PR Watch opens with `app=1` in its address (kept for the reloads):
+// a tab opened by hand, from a bookmark for instance, is then reused as well.
+const inTab = (() => {
+  try {
+    if (new URLSearchParams(globalThis.location.search).get('app') === '1') sessionStorage.setItem('pw-app', '1');
+    return sessionStorage.getItem('pw-app') !== '1';
+  } catch { return true; }
+})();
+if (inTab) globalThis.addEventListener('pagehide', () => navigator.sendBeacon(`/api/action?t=${encodeURIComponent(token)}`, new Blob([JSON.stringify({ action: 'tab-closed', tab: tabId })], { type: 'application/json' })));
+
+// In a browser tab: offers once to allow the notifications that bring the tab back to the front. It is asked here, in the tab that
+// stays, and not while switching to it: the window being left would take the browser's question down with it.
+function renderAlertsBanner() {
+  const banner = document.getElementById('alerts-banner');
+  let declined = false;
+  try { declined = localStorage.getItem('pw-alerts-declined') === '1'; } catch { /* asked again next time */ }
+  banner.hidden = !(inTab && 'Notification' in globalThis && Notification.permission === 'default' && !declined);
+  if (banner.hidden || banner.childElementCount) return;
+  const done = () => { banner.hidden = true; banner.replaceChildren(); };
+  banner.replaceChildren(
+    h('span', {}, 'Autoriser les notifications du navigateur ? PR Watch pourra ainsi vous rappeler cet onglet quand il est caché.'),
+    h('button', { class: 'btn primary', type: 'button', onclick: () => allowTabNotifications().then(done) }, 'Autoriser'),
+    h('button', { class: 'btn', type: 'button', onclick: () => { try { localStorage.setItem('pw-alerts-declined', '1'); } catch { /* shown again */ } done(); } }, 'Non merci'));
+}
+
 async function refreshState(force = false) {
   try {
-    const state = await call('/api/state');
+    const state = await call(inTab ? `/api/state?tab=${tabId}` : '/api/state');
     if (S.codeVersion !== null && state.codeVersion !== S.codeVersion) { globalThis.location.replace(`${globalThis.location.pathname}?t=${encodeURIComponent(token)}`); return; }
     S.codeVersion = state.codeVersion;
     const json = JSON.stringify(state);

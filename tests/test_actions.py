@@ -126,6 +126,43 @@ class RegistryActionsTest(unittest.TestCase):
         self.assertTrue(actions.perform({'action': 'read-reports', 'repo': 'fake-repo', 'pr': 1})['ok'])
         self.assertIsNone(registry()[0]['activity'])
 
+    def test_a_browser_tab_is_remembered_until_it_is_closed_or_silent(self):
+        self.assertFalse(actions.tab_is_open())
+        pwpr.tab_seen('abc')
+        self.assertTrue(actions.tab_is_open())
+        pwpr.tab_closed('other')  # another tab leaving does not forget this one
+        self.assertTrue(actions.tab_is_open())
+        self.assertTrue(actions.perform({'action': 'tab-closed', 'tab': 'abc'})['ok'])
+        self.assertFalse(actions.tab_is_open())
+        pwpr.tab_seen('abc')
+        with mock.patch('time.time', return_value=__import__('time').time() + pwpr.TAB_FRESH_SECONDS + 1):
+            self.assertFalse(actions.tab_is_open())
+        pwpr.tab_closed('abc')
+
+    def test_a_tab_that_does_not_answer_is_not_believed(self):
+        pwpr.tab_seen('abc')
+        stale = json.loads((pwstore.DIR / pwpr.TAB_FILE).read_text())
+        stale['at'] -= 60  # last heard of a minute ago: closed, or hidden for long
+        (pwstore.DIR / pwpr.TAB_FILE).write_text(json.dumps(stale))
+        with mock.patch('time.sleep') as sleeping:
+            self.assertFalse(actions.tab_is_open())  # nobody answers during the wait
+            self.assertTrue(sleeping.called)
+            sleeping.side_effect = lambda _: pwpr.tab_seen('abc')
+            (pwstore.DIR / pwpr.TAB_FILE).write_text(json.dumps(stale))
+            self.assertTrue(actions.tab_is_open())  # the page polled again: it is there
+        pwpr.tab_closed('abc')
+
+    def test_the_dashboard_opens_in_the_browser_only_when_no_tab_is_open(self):
+        with mock.patch.object(pwservice, 'ensure_web', return_value='http://x/'), mock.patch.object(pwservice, 'ensure'), \
+                mock.patch.object(pwconfig, 'config', return_value={**pwconfig.config(), 'dashboardInBrowser': True}), \
+                mock.patch.object(pwservice.pwnotifications, 'open_url') as browser, mock.patch.object(pwservice.pwwindow, 'open_app_window') as window:
+            pwservice.open_dashboard()
+            browser.assert_called_once_with('http://x/')
+            pwpr.tab_seen('abc')
+            pwservice.open_dashboard()
+            browser.assert_called_once()  # the tab picks the request up by itself
+            window.assert_not_called()
+
     def test_merge_is_pointless_when_bitbucket_would_refuse_it(self):
         for blockers in (['approbations 0/1'], ['pipeline #3 en échec'], ['pipeline #3 en cours'], ['1 tâche(s) ouverte(s)', 'approbations 1/2']):
             self.assertTrue(pwmerging.merge_is_pointless(blockers), blockers)

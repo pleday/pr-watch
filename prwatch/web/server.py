@@ -109,6 +109,8 @@ class Handler(BaseHTTPRequestHandler):
         if url.path == '/api/ping':
             return self._json(200, {'ok': True, 'pid': os.getpid()})
         if url.path == '/api/state':
+            if (query.get('tab') or [''])[0]:
+                pwpr.tab_seen(query['tab'][0])
             return self._json(200, pwactions.overview())
         if url.path == '/api/log':
             limit = (query.get('limit') or [''])[0]

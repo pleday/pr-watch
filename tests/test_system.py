@@ -372,6 +372,7 @@ class MiscTest(unittest.TestCase):
         with mock.patch.object(pwwindow, 'chromium_candidates', return_value=[os.path.realpath('/bin/sh')]):
             command = pwwindow.app_window_command('http://127.0.0.1:1/')
         self.assertTrue(any(a.startswith('--app=http://127.0.0.1:1/') for a in command))
+        self.assertIn('--app=http://127.0.0.1:1/?app=1', command)  # the mark that keeps the window from registering as a tab
         self.assertFalse(any(a.startswith('--user-data-dir') for a in command))
         with mock.patch.object(pwwindow, 'chromium_candidates', return_value=[os.path.realpath('/bin/sh')]):
             own = pwwindow.app_window_command('http://127.0.0.1:1/', '/data/chrome')
