@@ -126,7 +126,8 @@ def conclude(entry, pr, ok, report, events, cfg):
     verdict, reason = found[-1] if found else ('ATTENTION', 'rapport sans conclusion explicite, à relire')
     if not ok:
         verdict, reason = 'ATTENTION', 'la session Claude a échoué ou a expiré'
-    fields = {'lastReport': report[-3000:], 'lastReportAt': pwstore.now(), 'needsAttention': ''}
+    fields = {'lastReport': report[-3000:], 'lastReportAt': pwstore.now(), 'needsAttention': '',
+              'reportsTotal': (entry.get('reportsTotal') or 0) + 1, 'reportsUnread': (entry.get('reportsUnread') or 0) + 1}
     if verdict == 'ATTENTION':
         fields['needsAttention'] = reason.strip() or 'à regarder'
         title, where = pr_notice(entry, pr, '⚠ Votre attention est nécessaire')

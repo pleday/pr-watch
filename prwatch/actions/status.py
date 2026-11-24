@@ -183,6 +183,8 @@ def overview():
                 )},
                 'removeInMinutes': remove_in(entry, cfg),
                 'hasReport': bool(entry.get('lastReport')),
+                'reportsUnread': entry.get('reportsUnread') or 0,
+                'reportsTotal': max(entry.get('reportsTotal') or 0, 1 if entry.get('lastReport') else 0),
                 'settings': entry.get('settings') or {},
                 'effective': pwconfig.effective(entry, cfg),
                 'sessionTitle': pwclaude.session_title(path),

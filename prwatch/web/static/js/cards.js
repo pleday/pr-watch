@@ -1,5 +1,5 @@
 // The card of a pull request: its state, its quick buttons, its menu, its expanded details.
-import { ICONS, S, act, featureHidden, h, icon, loadedAt } from './core.js';
+import { ICONS, S, act, askServer, featureHidden, h, icon, loadedAt } from './core.js';
 import { formatDateTime } from './i18n.js';
 import { confirmAction, mergeDialog, openSession, ownChoices, pushDialog, settingsDialog, ticketDialog } from './dialogs.js';
 import { selectTab, showJournal } from './journal.js';
@@ -53,7 +53,7 @@ export function cardActions(entry) {
     { id: 'pause', label: paused ? 'Reprendre' : 'Mettre en pause', icon: paused ? 'play' : 'pause', show: !done, run: () => act('pause', { ...target, paused: !paused }) },
     { id: 'ack', label: 'Marquer comme vu', icon: 'check', show: Boolean(entry.needsAttention || entry.activity), run: () => act('acknowledge', target) },
     { id: 'reset', label: 'Remettre les essais à 0', icon: 'reset', show: !done && ((entry.attempts || 0) > 0 || entry.state === 'gave-up'), run: () => act('reset', target) },
-    { id: 'report', label: 'Dernier rapport', icon: 'report', show: Boolean(entry.hasReport), run: () => showJournal(`${entry.repo}#${entry.pr}`, true) },
+    { id: 'report', label: 'Dernier rapport', icon: 'report', show: Boolean(entry.hasReport), run: () => { if (entry.reportsUnread) askServer('read-reports', target).then(() => S.refresh(true)); showJournal(`${entry.repo}#${entry.pr}`, true); } },
     { id: 'settings', label: 'Réglages…', icon: 'settings', show: !done, run: () => settingsDialog(entry) },
     { id: 'push', label: 'Pousser', icon: 'push', show: !done && unpushed, run: () => pushDialog(entry, false) },
     { id: 'forcePush', label: 'Pousser en force…', icon: 'forcePush', kind: 'danger', show: !done && unpushed, run: () => pushDialog(entry, true) },
@@ -89,8 +89,11 @@ export function card(entry, state) {
   const quickIds = entry.quickActions || [];
   const quick = quickIds.map((id) => actions.find((action) => action.id === id)).filter(Boolean);
   const others = actions.filter((action) => !quick.includes(action));
-  const button = (action) => h('button', { class: `btn ${action.kind || ''}`, type: 'button', onclick: action.run }, icon(action.icon), action.label);
-  const mini = (action) => h('button', { class: `btn mini ${action.kind === 'primary' || action.kind === 'good' ? action.kind : ''}`, type: 'button', title: action.label, 'aria-label': action.label, onclick: action.run }, icon(action.icon));
+  // unread reports: a pill on the report button, the total in its tooltip
+  const unread = (action) => (action.id === 'report' && entry.reportsUnread > 0 ? h('span', { class: 'pill', 'aria-hidden': 'true' }, String(entry.reportsUnread)) : null);
+  const reportTip = (action) => (action.id === 'report' ? `${action.label} — ${entry.reportsUnread} non lu${entry.reportsUnread > 1 ? 's' : ''} (${entry.reportsTotal} au total)` : action.label);
+  const button = (action) => h('button', { class: `btn ${action.kind || ''} ${unread(action) ? 'has-pill' : ''}`, type: 'button', title: reportTip(action), onclick: action.run }, icon(action.icon), action.label, unread(action));
+  const mini = (action) => h('button', { class: `btn mini ${action.kind === 'primary' || action.kind === 'good' ? action.kind : ''} ${unread(action) ? 'has-pill' : ''}`, type: 'button', title: reportTip(action), 'aria-label': reportTip(action), onclick: action.run }, icon(action.icon), unread(action));
   const article = h('article', { class: `card ${entry.needsAttention ? 'attention' : ''} ${entry.ready && !entry.needsAttention ? 'ready' : ''} ${entry.state === 'done' ? 'done' : ''} ${S.focusKey === `${entry.repo}#${entry.pr}` ? 'focus' : ''}` },
     h('div', { class: 'card-head' },
       h('button', { class: 'toggle', type: 'button', 'aria-expanded': 'false', title: 'Étendre / réduire', 'aria-label': 'Étendre ou réduire la carte', onclick: () => setExpanded(article, !article.classList.contains('expanded')) }, icon('chevron')),

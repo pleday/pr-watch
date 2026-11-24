@@ -56,6 +56,16 @@ def report(repo, pr):
     return pwcommon._result(True, '', report=entry.get('lastReport') or '', at=entry.get('lastReportAt') or '')
 
 
+def read_reports(repo, pr):
+    """Marks the reports of the pull request as read (the badge of its report button goes away)."""
+    entry = pwcommon._entry(repo, pr)
+    if not entry:
+        return pwcommon._result(False, 'Pull request inconnue.')
+    if entry.get('reportsUnread'):
+        pwstore.update_entry(entry, reportsUnread=0)
+    return pwcommon._result(True, '')
+
+
 def pause(repo, pr, paused=True):
     entry = pwcommon._entry(repo, pr)
     if not entry:

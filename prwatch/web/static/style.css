@@ -256,3 +256,7 @@ dialog .row .btn.primary { align-self: flex-start; }
 .perm .status.ok { color: var(--green); } .perm .status.ko { color: var(--red); } .perm .status.warn { color: var(--orange); } .perm .status.declined { color: var(--muted); }
 .perm.granted { opacity: .85; }
 .perm summary { cursor: pointer; }
+
+/* unread reports: a pill on the corner of the report button */
+.btn.has-pill { position: relative; }
+.btn .pill { position: absolute; top: -6px; right: -6px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 999px; background: var(--red); color: #fff; font-size: 11px; font-weight: 700; line-height: 16px; text-align: center; pointer-events: none; }

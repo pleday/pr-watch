@@ -4,6 +4,7 @@
 
 ## Non publié
 
+- **Rapports non lus : pastille sur le bouton « Dernier rapport ».** Le bouton affiche le nombre de rapports générés depuis la dernière ouverture ; l’info-bulle donne le total. Ouvrir le rapport remet le compteur à 0.
 - **Ajout d’une PR : un seul ascenseur.** La liste des sessions Claude n’a plus son propre ascenseur imbriqué dans celui de la boîte de dialogue ; seul le corps de la boîte défile, titre et boutons restent visibles.
 
 ## 0.1.3 — 2026-11-23
@@ -63,6 +64,7 @@
 
 ## Unreleased
 
+- **Unread reports: badge on the "Last report" button.** The button shows the number of reports generated since it was last opened; the tooltip gives the total. Opening the report resets the counter to 0.
 - **Adding a PR: a single scrollbar.** The list of Claude sessions no longer has its own scrollbar nested in the one of the dialog; only the body of the dialog scrolls, title and buttons stay visible.
 
 ## 0.1.3 — 2026-11-23

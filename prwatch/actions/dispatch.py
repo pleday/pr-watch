@@ -14,6 +14,7 @@ ACTIONS = {
     'pause': (pwpr.pause, ('repo', 'pr', 'paused')),
     'reset': (pwpr.reset, ('repo', 'pr')),
     'acknowledge': (pwpr.acknowledge, ('repo', 'pr')),
+    'read-reports': (pwpr.read_reports, ('repo', 'pr')),
     'wake': (pwpr.wake, ('repo', 'pr')),
     'answer-question': (pwpr.answer_question, ('repo', 'pr', 'id', 'choice', 'note')),
     'unwatch': (pwpr.unwatch, ('repo', 'pr')),
@@ -50,7 +51,7 @@ ACTIONS = {
 
 
 # Actions after which the daemon polls the pull requests without waiting.
-REFRESHING = {'resume', 'refresh', 'pause', 'reset', 'acknowledge', 'wake', 'answer-question', 'push', 'force-push', 'fetch', 'rebase', 'merge', 'pr-settings', 'pr-settings-form'}
+REFRESHING = {'resume', 'refresh', 'pause', 'reset', 'acknowledge', 'read-reports', 'wake', 'answer-question', 'push', 'force-push', 'fetch', 'rebase', 'merge', 'pr-settings', 'pr-settings-form'}
 
 
 # Actions that cannot be undone, or that leave the machine: the request must say the user confirmed.
