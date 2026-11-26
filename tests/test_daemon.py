@@ -407,6 +407,23 @@ class HandleTest(unittest.TestCase):
         self.assertEqual([q['id'] for q in stored['pendingQuestions']], [9])
         self.assertEqual((stored['askedComments'], stored['lastComment']), ([9], 7))
 
+    def test_a_question_is_dropped_when_its_thread_is_resolved_or_deleted(self):
+        pending = [{'id': 9, 'author': 'A', 'text': 'x'}, {'id': 10, 'author': 'B', 'text': 'y'}, {'id': 11, 'author': 'C', 'text': 'z'}, {'id': 12, 'author': 'D', 'text': 'w'}]
+        comments = {'values': [{'id': 9, 'resolution': {}}, {'id': 10, 'deleted': True}, {'id': 11}, {'id': 13, 'parent': {'id': 12}}, {'id': 12, 'resolution': {}}]}
+        set_registry([entry(1, pendingQuestions=pending)])
+        reset_config()
+        with mock.patch.object(pwbitbucket, 'api', return_value=comments):
+            pwcycle.drop_stale_questions(registry()[0], False)
+        self.assertEqual([q['id'] for q in registry()[0]['pendingQuestions']], [11])
+
+    def test_questions_are_kept_when_bitbucket_does_not_answer_with_comments(self):
+        set_registry([entry(1, pendingQuestions=[{'id': 9, 'author': 'A', 'text': 'x'}])])
+        reset_config()
+        for answer in (None, {'state': 'OPEN'}):
+            with mock.patch.object(pwbitbucket, 'api', return_value=answer):
+                pwcycle.drop_stale_questions(registry()[0], False)
+            self.assertEqual(len(registry()[0]['pendingQuestions']), 1)
+
     def test_a_question_is_asked_only_once(self):
         self.run_cycle({}, [self.QUESTION])
         set_registry(registry())

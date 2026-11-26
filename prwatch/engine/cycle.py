@@ -52,6 +52,7 @@ def handle(entry, cfg, dry_run):
     cursors = {'lastPipeline': last_pipeline, 'lastComment': last_comment, 'seenStatuses': seen_statuses}
     settings = pwconfig.effective(entry, cfg)
     asked = [e for e in actionable if pwconfig.category(e) == 'question' and settings['handling'].get('question', 'ask') == 'ask']
+    drop_stale_questions(entry, dry_run)
     ask_user(entry, pr, cfg, asked, dry_run)
     suspended = bool(pwstore.suspension()) and not dry_run
     to_claude, to_rerun, to_tell = pwconfig.route([e for e in actionable if e not in asked], settings, claude_disabled=suspended)
@@ -130,6 +131,32 @@ def tell_events(entry, pr, cfg, events, dry_run):
         else:
             title, where = pwwake.pr_notice(entry, pr, label)
             pwwake.notify(title, f"{where}\n{summary}", cfg, entry=entry)
+
+
+def drop_stale_questions(entry, dry_run):
+    """Forgets the pending questions whose thread was resolved or whose comment was deleted on Bitbucket: nothing is left to decide."""
+    pending = entry.get('pendingQuestions') or []
+    if not pending or dry_run:
+        return
+    data = pwbitbucket.api(f"{pwbitbucket.repo_path(entry)}/pullrequests/{entry['pr']}/comments", {'pagelen': 100, 'sort': 'id'})
+    if not data or 'values' not in data:
+        return  # Bitbucket unreachable or answering something else: keep everything
+    by_id = {c['id']: c for c in data.get('values', [])}
+    complete = not data.get('next')  # a comment missing from a partial page may only be on the next one
+
+    def stale(question):
+        comment = by_id.get(question['id'])
+        if comment is None:
+            return complete
+        root = by_id.get((comment.get('parent') or {}).get('id'), comment)  # the resolution is carried by the root of the thread
+        return bool(comment.get('deleted')) or root.get('resolution') is not None
+
+    kept = [q for q in pending if not stale(q)]
+    if len(kept) != len(pending):
+        for q in pending:
+            if q not in kept:
+                pwstore.log(f"{pwstore.key_of(entry)}: question {q['id']} dropped, its thread is resolved or deleted")
+        pwstore.update_entry(entry, pendingQuestions=kept)
 
 
 def ask_user(entry, pr, cfg, events, dry_run):
