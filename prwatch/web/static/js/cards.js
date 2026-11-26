@@ -10,7 +10,8 @@ export function questionBox(entry, question) {
   const button = (text, choice, extra = '') => h('button', { class: `btn ${extra}`, type: 'button', onclick: () => answer(choice) }, text);
   note.addEventListener('keydown', (event) => { if (event.key === 'Enter') answer('other'); });
   return h('div', { class: 'question', role: 'group', 'aria-label': 'Question d’un relecteur' },
-    h('div', { class: 'q-head' }, `❓ ${question.author}`, question.place ? h('span', { class: 'muted' }, ` · ${question.place}`) : null),
+    h('div', { class: 'q-head' }, `❓ ${question.author}`, question.place ? h('span', { class: 'muted' }, ` · ${question.place}`) : null,
+      h('button', { class: 'btn mini q-dismiss', type: 'button', title: 'Ignorer cette question (sans réveiller Claude)', 'aria-label': 'Ignorer cette question', onclick: () => answer('no') }, '✕')),
     h('div', { class: 'q-text' }, question.text),
     h('div', { class: 'q-answer' }, h('strong', {}, 'À traiter ?'), button('Oui', 'yes', 'primary'), button('Non', 'no'), note, button('Autre', 'other')));
 }
@@ -112,8 +113,12 @@ export function card(entry, state) {
       entry.status.unpushed ? h('span', { class: 'chip unpushed', title: `${entry.status.unpushed} : le bouton « Pousser » les envoie sur la PR.` }, '⬆ À pousser') : null,
       h('span', { class: 'mini-actions' }, ...quick.map(mini), others.length ? moreMenu(others) : null)),
     entry.needsAttention ? h('div', { class: 'banner', role: 'alert' }, `⚠ ${entry.needsAttention}`) : null,
-    (entry.pendingQuestions || []).map((question) => questionBox(entry, question)),
     h('div', { class: 'card-more' },
+      // the questions are part of the details: a collapsed card only says that a decision is waited for (its chip)
+      (entry.pendingQuestions || []).length > 1
+        ? h('div', { class: 'q-all' }, h('button', { class: 'btn', type: 'button', onclick: () => Promise.all(entry.pendingQuestions.map((q) => act('answer-question', { repo: entry.repo, pr: entry.pr, id: q.id, choice: 'no', note: '' }))) }, 'Tout ignorer'))
+        : null,
+      (entry.pendingQuestions || []).map((question) => questionBox(entry, question)),
       h('div', { class: 'branch muted' }, h('code', {}, entry.branch)),
       entry.removeInMinutes === null || entry.removeInMinutes === undefined ? null : h('div', { class: 'muted' }, `Sera retirée de la liste dans ${entry.removeInMinutes} min (délai compté depuis la fin de la PR).`),
       entry.autoMergeNote && entry.effective?.autoMerge !== 'off' ? h('div', { class: 'muted' }, `Merge automatique en attente : ${entry.autoMergeNote}.`) : null,

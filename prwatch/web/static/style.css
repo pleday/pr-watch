@@ -193,7 +193,9 @@ textarea.drafting { background-image: linear-gradient(90deg, transparent, color-
 
 .chip.question { color: var(--purple); } .state-icon.question { color: var(--purple); }
 div.question { margin-top: 10px; border: 1px solid var(--purple); border-radius: 10px; padding: 10px 12px; background: var(--bg); }
-.q-head { font-weight: 700; }
+.q-head { font-weight: 700; display: flex; gap: 6px; align-items: center; }
+.q-dismiss { margin-left: auto; }
+.q-all { margin-top: 10px; }
 .q-text { white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0 10px; max-height: 12em; overflow: auto; }
 .q-answer { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .q-answer input { flex: 1 1 220px; min-width: 0; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; }

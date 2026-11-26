@@ -4,6 +4,7 @@
 
 ## Non publié
 
+- **Questions des relecteurs : repliées avec la carte, et ignorables.** Les questions « À traiter ? » ne s’affichent plus que carte dépliée (la pastille « Décision attendue » reste visible) ; un ✕ sur chaque question et un bouton « Tout ignorer » les écartent sans réveiller Claude. Une question disparaît aussi toute seule quand son fil est résolu ou son commentaire supprimé sur Bitbucket.
 - **F5 sans jeton Bitbucket : plus de trace d’erreur.** Une PR dont la lecture échoue faute de jeton est journalisée sans faire échouer les autres, et le test correspondant n’appelle plus le vrai Bitbucket.
 
 ## 0.1.5 — 2026-11-26
@@ -88,6 +89,7 @@
 
 ## Unreleased
 
+- **Reviewer questions: folded with the card, and dismissible.** The "Handle this?" questions only show when the card is expanded (the "Decision awaited" chip stays visible); a ✕ on each question and a "Dismiss all" button set them aside without waking Claude. A question also disappears by itself when its thread is resolved or its comment deleted on Bitbucket.
 - **F5 without a Bitbucket token: no more error trace.** A pull request that cannot be read for lack of a token is logged without stopping the others, and the matching test no longer calls the real Bitbucket.
 
 ## 0.1.5 — 2026-11-26
