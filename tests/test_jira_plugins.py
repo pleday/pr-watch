@@ -1,5 +1,7 @@
+import io
 import os
 import tempfile
+import urllib.error
 import unittest
 import zipfile
 from unittest import mock
@@ -20,6 +22,16 @@ class TicketKeyTest(unittest.TestCase):
         self.assertEqual(jira.ticket_key({'branch': 'bugfix/PROJ-16126-section', 'title': 'x [PROJ-1]'}), 'PROJ-16126')
         self.assertEqual(jira.ticket_key({'branch': 'main', 'title': 'fix(a): b [PROJ-16107]'}), 'PROJ-16107')
         self.assertIsNone(jira.ticket_key({'branch': 'main', 'title': 'no ticket'}))
+
+
+class JiraErrorPageTest(unittest.TestCase):
+    def test_an_html_error_page_is_reduced_to_its_title(self):
+        page = b'<!DOCTYPE html><html><head><title>Oops - an error has occurred</title><script src="x.js"></script></head></html>'
+        error = urllib.error.HTTPError('https://acme.atlassian.net', 503, 'x', {}, io.BytesIO(page))
+        with mock.patch.object(jira.urllib.request, 'urlopen', side_effect=error), mock.patch.object(jira, '_auth', return_value='Basic x'):
+            with self.assertRaises(jira.JiraError) as raised:
+                jira.request('https://acme.atlassian.net', 'GET', '/myself')
+        self.assertEqual(str(raised.exception), "Jira a refusé (503) : page d'erreur du site (Oops - an error has occurred)")
 
 
 class JiraTest(unittest.TestCase):

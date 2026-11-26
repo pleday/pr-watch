@@ -120,13 +120,17 @@ bother them only through the final PR-WATCH: ATTENTION line, and only for what y
 """
 
 
+# Generous cap: a report is a few paragraphs, and a cut loses its beginning (the part that says what was seen); the journal keeps it whole
+REPORT_MAX_CHARS = 20000
+
+
 def conclude(entry, pr, ok, report, events, cfg):
     """Reads the verdict the woken session ends its report with, and tells the user when they are needed."""
     found = re.findall(r'PR-WATCH:\s*(OK|ATTENTION)\s*(.*)', report)
     verdict, reason = found[-1] if found else ('ATTENTION', 'rapport sans conclusion explicite, à relire')
     if not ok:
         verdict, reason = 'ATTENTION', 'la session Claude a échoué ou a expiré'
-    fields = {'lastReport': report[-3000:], 'lastReportAt': pwstore.now(), 'needsAttention': '',
+    fields = {'lastReport': report[-REPORT_MAX_CHARS:], 'lastReportAt': pwstore.now(), 'needsAttention': '',
               'reportsTotal': (entry.get('reportsTotal') or 0) + 1, 'reportsUnread': (entry.get('reportsUnread') or 0) + 1}
     if verdict == 'ATTENTION':
         fields['needsAttention'] = reason.strip() or 'à regarder'
@@ -166,7 +170,7 @@ def wake_claude(entry, pr, events, cfg, dry_run):
     failed = result.returncode != 0 or bool(final and final.get('is_error'))
     if failed and (reason := out_of_tokens(text + '\n' + (result.stdout or '') + '\n' + (result.stderr or ''))):
         raise OutOfTokens(reason)
-    tail = text.strip()[-1500:]
+    tail = text.strip()
     pwstore.log(f"{pwstore.key_of(entry)}: claude exited {result.returncode}\n{tail}" + (f"\nstderr: {result.stderr.strip()[-500:]}" if result.returncode else ''))
     return not failed, text
 

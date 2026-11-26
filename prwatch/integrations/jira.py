@@ -59,7 +59,9 @@ def request(site, method, path, body=None):
             parsed = json.loads(detail)
             detail = ' ; '.join([*parsed.get('errorMessages', []), *[f'{k} : {v}' for k, v in (parsed.get('errors') or {}).items()]]) or detail
         except ValueError:
-            pass
+            if re.search(r'<\s*(html|!doctype)', detail, re.I):  # an error page of the site (503...): its title says it, its markup is noise
+                title = re.search(r'<title>(.*?)</title>', detail, re.I | re.S)
+                detail = f"page d'erreur du site ({' '.join(title.group(1).split())})" if title else "page d'erreur du site"
         raise JiraError(f'Jira a refusé ({error.code}) : {detail[:400]}') from error
     except (urllib.error.URLError, TimeoutError) as error:
         raise JiraError(f'Jira injoignable : {error}') from error

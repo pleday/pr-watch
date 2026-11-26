@@ -109,7 +109,9 @@ def handle(entry, cfg, dry_run):
         if notes:
             report += '\n\n' + '\n'.join(notes)
             if failed and re.findall(r'PR-WATCH:\s*(OK|ATTENTION)', report)[-1] == 'OK':
-                report += '\nPR-WATCH: ATTENTION ce que le rapport annonce sur les commentaires (réponse, résolution) ne figure pas sur Bitbucket'
+                ids = ', '.join(dict.fromkeys(re.findall(r'commentaire (\d+)', '\n'.join(n for n in notes if n.startswith('⚠')))))
+                report += ('\nPR-WATCH: ATTENTION le rapport dit avoir répondu ou résolu, mais Bitbucket ne le montre pas'
+                           + (f' (commentaire(s) {ids})' if ids else '') + ' : détail en fin de rapport')
     fields = pwwake.conclude(entry, pr, ok, report, actionable, cfg)
     if ok:
         pwstore.update_entry(entry, attempts=attempts + 1, forceWake=False, decisions=[], **cursors, **fields)
