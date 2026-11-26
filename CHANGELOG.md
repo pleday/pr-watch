@@ -4,6 +4,19 @@
 
 ## Non publié
 
+## 0.1.5 — 2026-11-26
+
+- **Mode sombre : texte lisible sur les boutons colorés.** Les boutons pleins (bleu, vert, orange, rouge), les pastilles de compteur et les messages d’erreur utilisaient du blanc, trop peu contrasté sur les couleurs claires du thème sombre ; ils prennent maintenant la couleur du fond. Les fragments de code des cartes sont aussi plus lisibles.
+- **Test de bout en bout : audit.** Nouvelle série dans `make e2e` (Chrome sans fenêtre) : accessibilité, clavier, contraste AA en clair et en sombre sur chaque onglet, panneau d’options et boîte de dialogue, écran de 360 px, rapport long et page d’erreur Jira dans le journal, avertissement du journal volumineux.
+
+- **Tableau de bord : quatre retouches.** Les pastilles « Démon / Claude » et les sous-onglets d’Options sont plus contrastés (norme AA). La carte « Décision attendue » n’a plus d’encadré parasite autour de son icône, ses lignes sont alignées sur les autres. Le bandeau du journal dit « X Mo sur 2 Mo » au lieu de se contredire à 2,0 Mo. La jauge de forfait affiche « Quota ? » au lieu de « ? % » tant qu’elle n’est pas mesurée.
+
+- **Jira : une page d’erreur n’inonde plus le journal.** Quand Jira répond 503 avec une page HTML, le journal indique seulement son titre au lieu des 400 premiers caractères de balises.
+
+- **Journal : avertissement quand il devient gros.** Passé 1,5 Mo (sur 2 Mo, limite à laquelle les plus anciennes entrées sont mises de côté), l’onglet Journal affiche un bandeau qui propose d’utiliser « Archiver ».
+
+- **Rapports de Claude : plus tronqués.** Le journal gardait les 1 500 derniers caractères du rapport et « Dernier rapport » les 3 000 derniers, ce qui coupait le début (ce que Claude a vu). Le journal garde désormais le rapport en entier ; « Dernier rapport » passe à 20 000 caractères.
+
 ## 0.1.4 — 2026-11-24
 
 - **Option « Ouvrir le tableau de bord dans un onglet du navigateur ».** Dans Options › Général : au lieu de la fenêtre dédiée, PR Watch s’ouvre dans le navigateur par défaut.
@@ -72,6 +85,19 @@
 # Changelog (English)
 
 ## Unreleased
+
+## 0.1.5 — 2026-11-26
+
+- **Dark mode: readable text on coloured buttons.** The solid buttons (blue, green, orange, red), counter pills and error messages used white, too faint on the light colours of the dark theme; they now take the colour of the background. Code fragments on the cards are easier to read too.
+- **End-to-end test: audit.** New series in `make e2e` (windowless Chrome): accessibility, keyboard, AA contrast in light and dark on every tab, options panel and dialog, 360 px screen, long report and Jira error page in the log, large-log warning.
+
+- **Dashboard: four touch-ups.** The "Daemon / Claude" pills and the Options sub-tabs have a better contrast (AA). The "Decision awaited" card no longer has a stray frame around its icon, its rows line up with the others. The log banner says "X MB out of 2 MB" instead of contradicting itself at 2.0 MB. The plan gauge shows "Quota ?" instead of "? %" until it is measured.
+
+- **Jira: an error page no longer floods the log.** When Jira answers 503 with an HTML page, the log shows only its title instead of the first 400 characters of markup.
+
+- **Log: warning when it gets large.** Past 1.5 MB (out of 2 MB, the size at which the oldest entries are set aside), the Log tab shows a banner suggesting "Archive".
+
+- **Claude's reports are no longer truncated.** The journal kept the last 1,500 characters of a report and "Last report" the last 3,000, which cut off the beginning (what Claude saw). The journal now keeps the whole report; "Last report" is capped at 20,000 characters.
 
 ## 0.1.4 — 2026-11-24
 
