@@ -507,6 +507,12 @@ class PerformTest(unittest.TestCase):
         self.assertEqual(len(names), pwstore.ARCHIVES_KEPT)
         self.assertNotIn('daemon-20261101-000000.log', names)
 
+    def test_a_large_journal_is_flagged(self):
+        pwstore.LOG.write_text('x\n', encoding='utf-8')
+        self.assertFalse(pwstore.log_health()['large'])
+        pwstore.LOG.write_text('x' * pwstore.LOG_WARN_BYTES, encoding='utf-8')
+        self.assertTrue(pwstore.log_health()['large'])
+
     def test_an_empty_journal_has_nothing_to_archive(self):
         pwstore.LOG.write_text('', encoding='utf-8')
         self.assertFalse(actions.perform({'action': 'journal-archive', 'confirmed': True})['ok'])

@@ -36,6 +36,18 @@ def now():
 LOG_MAX_BYTES = 2 * 1024 * 1024
 
 
+LOG_WARN_BYTES = LOG_MAX_BYTES * 3 // 4
+
+
+def log_health():
+    """{'bytes': size of the journal, 'large': whether it is close to the size at which the oldest entries are set aside}."""
+    try:
+        size = LOG.stat().st_size
+    except OSError:
+        size = 0
+    return {'bytes': size, 'large': size >= LOG_WARN_BYTES}
+
+
 def log(message):
     DIR.mkdir(parents=True, exist_ok=True)
     try:

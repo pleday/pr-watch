@@ -207,6 +207,7 @@ def overview():
         'daemon': {'running': pwservice.is_running(), 'pid': pwservice.daemon_pid()},
         'suspension': pwstore.suspension(),
         'bitbucket': pwstore.bitbucket_health(),
+        'log': pwstore.log_health(),
         'setupMissing': pwconfig.missing_setup(cfg),
         'schedule': {**pwconfig.schedule_of(cfg), **dict(zip(('working', 'resumes', 'override'), pwconfig.schedule_effective_state(cfg)))},
         'usage': dict(zip(('quotas', 'at'), pwusage.read())) if cfg['usageGuard'] else None,

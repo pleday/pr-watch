@@ -24,7 +24,7 @@ function usagePill(usage) {
   const left = quotas ? [100 - Math.round(quotas.session.used), 100 - Math.round(quotas.week.used)] : null;
   const level = left ? usageLevel(quotas.session.used) : '';  // the icon is the current session; the week is in the tooltip and the detail
   return h('button', { class: `pill usage ${level}`, type: 'button', 'aria-label': left ? `Session de 5 h : ${left[0]} % restant` : 'Consommation inconnue', title: left ? `Forfait Claude : ${left[0]} % restant sur la session de 5 h, ${left[1]} % sur la semaine. Cliquer pour le détail.` : 'Consommation du forfait inconnue pour l’instant. Cliquer pour la mesurer.', onclick: () => usageDialog(usage) },
-    battery(left ? left[0] : 0, level), left ? `${left[0]} %` : '? %');
+    battery(left ? left[0] : 0, level), left ? `${left[0]} %` : t('usage.unknown'));
 }
 
 function formatScheduleResume(resumes) {
@@ -122,6 +122,9 @@ function renderState(state) {
   if (!bitbucket.hidden) {
     bitbucket.replaceChildren(h('span', {}, state.bitbucket.lastOk ? t('bitbucket.down', { at: formatDateTime(state.bitbucket.lastOk) }) : t('bitbucket.downNever')));
   }
+  const logBanner = document.getElementById('log-banner');
+  logBanner.hidden = !state.log?.large;
+  if (!logBanner.hidden) logBanner.replaceChildren(h('span', {}, t('log.large', { size: (state.log.bytes / 1048576).toFixed(1) })));
   renderAlertsBanner();
   const suspension = document.getElementById('suspension');
   suspension.hidden = !state.suspension;
@@ -210,7 +213,7 @@ document.addEventListener('pw-language-changed', () => {
   refreshLog(true);
 });
 
-const filterChanged = () => { S.logLimit = 200; refreshLog(true); };
+const filterChanged = () => { S.logLimit = 200; refreshLog(true); refreshState(); };
 
 document.getElementById('log-mode').addEventListener('change', filterChanged);
 
