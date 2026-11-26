@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pr-watch"
-version = "0.1.4"
+version = "0.1.5"
 description = "Surveille les pull requests Bitbucket et réveille la session Claude Code qui les a ouvertes / Watches Bitbucket pull requests and wakes the Claude Code session that opened them"
 readme = "README.md"
 license = "MIT"

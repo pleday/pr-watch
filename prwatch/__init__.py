@@ -1,3 +1,3 @@
 """PR Watch: watches Bitbucket pull requests and wakes the Claude Code session that opened them."""
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
