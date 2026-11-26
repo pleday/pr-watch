@@ -4,6 +4,8 @@
 
 ## Non publié
 
+- **F5 sans jeton Bitbucket : plus de trace d’erreur.** Une PR dont la lecture échoue faute de jeton est journalisée sans faire échouer les autres, et le test correspondant n’appelle plus le vrai Bitbucket.
+
 ## 0.1.5 — 2026-11-26
 
 - **Mode sombre : texte lisible sur les boutons colorés.** Les boutons pleins (bleu, vert, orange, rouge), les pastilles de compteur et les messages d’erreur utilisaient du blanc, trop peu contrasté sur les couleurs claires du thème sombre ; ils prennent maintenant la couleur du fond. Les fragments de code des cartes sont aussi plus lisibles.
@@ -85,6 +87,8 @@
 # Changelog (English)
 
 ## Unreleased
+
+- **F5 without a Bitbucket token: no more error trace.** A pull request that cannot be read for lack of a token is logged without stopping the others, and the matching test no longer calls the real Bitbucket.
 
 ## 0.1.5 — 2026-11-26
 

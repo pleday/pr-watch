@@ -480,7 +480,8 @@ class PerformTest(unittest.TestCase):
     def test_a_refresh_asks_the_daemon_for_a_cycle_at_once(self):
         poke = pwstore.DIR / 'poke'
         poke.unlink(missing_ok=True)
-        self.assertTrue(actions.perform({'action': 'refresh'})['ok'])
+        with mock.patch.object(pwbitbucket, 'api', return_value=None):  # never the real Bitbucket: the test must pass with no token, as on CI
+            self.assertTrue(actions.perform({'action': 'refresh'})['ok'])
         self.assertTrue(poke.exists())
         poke.unlink()
 

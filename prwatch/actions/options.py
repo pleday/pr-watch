@@ -231,7 +231,7 @@ def refresh():
                 if entry.get('title') != pr['title']:
                     pwstore.update_entry(entry, title=pr['title'])
                 pwmerging.sync_ready(entry, pr, cfg, False, announce=False)
-        except Exception as error:  # one PR must not stop the others
+        except (Exception, SystemExit) as error:  # one PR must not stop the others; SystemExit is what a missing Bitbucket token raises
             pwstore.log(f'{pwstore.key_of(entry)}: refresh: {type(error).__name__}: {error}')
 
     if entries:
