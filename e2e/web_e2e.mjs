@@ -508,6 +508,139 @@ check('a non-object body is refused with 400', (await post({ 'X-Token': info.tok
 check('the server still answers after refused requests on the same connection', JSON.parse((await post({ 'X-Token': info.token }, { action: 'nope' })).body).message === 'Action inconnue.');
 check('config.json untouched by refused options', config().pollSeconds === 120 && !('claudeBinary' in config()));
 
+console.log('== audit: tabs, keyboard and accessibility');
+await page.locator('#tabs button[data-tab="prs"]').click();
+check('the tabs have the tab role and exactly one is selected', (await page.locator('#tabs [role=tab]').count()) === 3 && (await page.locator('#tabs [aria-selected="true"]').count()) === 1);
+check('every button has an accessible name', (await page.evaluate(() => [...document.querySelectorAll('button')].filter((b) => b.getBoundingClientRect().width > 0 && !(b.innerText.trim() || b.getAttribute('aria-label') || b.title)).length)) === 0);
+check('every field has a label', (await page.evaluate(() => [...document.querySelectorAll('input:not([type=hidden]), select, textarea')].filter((f) => f.getBoundingClientRect().width > 0 && !(f.labels?.length || f.getAttribute('aria-label') || f.getAttribute('aria-labelledby') || f.closest('label'))).map((f) => f.id || f.name || f.type))).length === 0);
+check('the document declares its language', ['fr', 'en'].includes(await page.evaluate(() => document.documentElement.lang)));
+await page.locator('#pr-filter').blur();
+await page.keyboard.press('/');
+check('"/" focuses the filter', await page.evaluate(() => document.activeElement?.id === 'pr-filter'));
+const everyCard = await page.locator('#prs .card').count();
+await page.keyboard.type('Demande votre attention');
+check('typing in the filter narrows the list', (await page.locator('#prs .card:visible').count()) === 1);
+await page.keyboard.press('Escape');
+check('Escape empties the filter and leaves it', (await page.inputValue('#pr-filter')) === '' && (await page.locator('#prs .card:visible').count()) === everyCard);
+await page.keyboard.press('Tab');
+check('a focused control shows a visible focus ring', await page.evaluate(() => { const s = getComputedStyle(document.activeElement); return s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0 || s.boxShadow !== 'none'; }));
+
+console.log('== audit: icons and chips');
+patchEntry(7, { pendingQuestions: [{ id: 99, author: 'Relecteur', place: 'src/b.ts:3', text: 'Une autre question ?', at: '2026-11-17 10:40:00' }] });
+await page.waitForSelector('.state-icon.question', { timeout: 15000 }).catch(() => {});
+check('the state icon of a pending question has no frame', (await page.locator('.state-icon.question').first().evaluate((e) => getComputedStyle(e).borderTopWidth)) === '0px');
+check('the question box keeps its frame', (await page.locator('div.question').first().evaluate((e) => getComputedStyle(e).borderTopWidth)) === '1px');
+const rows = await page.locator('#prs .card:visible .card-head, #prs .card:visible header').evaluateAll((nodes) => nodes.map((n) => Math.round(n.getBoundingClientRect().height)));
+check('the head of every card has a similar height (no stray padding)', rows.length === 0 || Math.max(...rows) - Math.min(...rows) <= 70, rows.join(','));
+
+console.log('== audit: the plan gauge');
+const usage = page.locator('.pill.usage');
+check('an unmeasured plan says so in words', (await usage.textContent()).trim() === 'Quota ?' && (await usage.getAttribute('aria-label')) === 'Consommation inconnue');
+await usage.click();
+await page.waitForSelector('dialog[open]');
+check('its dialog opens and closes with Escape', true);
+await page.keyboard.press('Escape');
+check('the dialog is closed', (await page.locator('dialog[open]').count()) === 0);
+
+console.log('== audit: contrast (WCAG AA) in light and dark');
+const contrast = () => page.evaluate(() => {
+  const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const rgba = (css) => { ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = '#000'; ctx.fillStyle = css; ctx.fillRect(0, 0, 1, 1); return [...ctx.getImageData(0, 0, 1, 1).data]; };
+  const over = (top, under) => { const a = top[3] / 255; return [0, 1, 2].map((i) => top[i] * a + under[i] * (1 - a)).concat(255); };
+  const lum = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+  const backdrop = (e) => { const layers = []; for (let n = e; n; n = n.parentElement) { const c = rgba(getComputedStyle(n).backgroundColor); if (c[3]) layers.push(c); if (c[3] === 255) break; } return layers.reduceRight((under, c) => over(c, under), [255, 255, 255, 255]); };
+  const bad = [];
+  // with a dialog open, only the dialog counts: the page behind it is dimmed by the backdrop on purpose
+  for (const e of document.querySelectorAll(document.querySelector('dialog[open]') ? 'dialog[open] *' : 'body *')) {
+    const box = e.getBoundingClientRect();
+    if (!box.width || !box.height || getComputedStyle(e).visibility === 'hidden' || e.closest('[hidden], dialog:not([open])')) continue;
+    if (![...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue;
+    const style = getComputedStyle(e);
+    if (style.opacity !== '1') continue;  // dimmed on purpose (a finished pull request)
+    const bg = backdrop(e); const fg = over(rgba(style.color), bg);
+    const l1 = lum(fg); const l2 = lum(bg); const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    const large = parseFloat(style.fontSize) >= 24 || (parseFloat(style.fontSize) >= 18.66 && Number(style.fontWeight) >= 700);
+    if (ratio < (large ? 3 : 4.5)) bad.push(`${e.tagName.toLowerCase()}.${String(e.className).split(' ')[0]} "${e.textContent.trim().slice(0, 24)}" ${ratio.toFixed(1)}`);
+  }
+  return bad;
+});
+for (const scheme of ['light', 'dark']) {
+  await page.emulateMedia({ colorScheme: scheme });
+  for (const tab of ['prs', 'log', 'options']) {
+    await page.locator(`#tabs button[data-tab="${tab}"]`).click();
+    await sleep(150);
+    if (tab === 'options') {
+      for (const panel of await page.locator('.options .subtabs button').all()) {
+        await panel.click();
+        const bad = await contrast();
+        check(`contrast, ${scheme}, options › ${(await panel.textContent()).trim()}`, bad.length === 0, bad.slice(0, 8).join(' | '));
+      }
+      continue;
+    }
+    const bad = await contrast();
+    check(`contrast, ${scheme}, tab ${tab}`, bad.length === 0, bad.slice(0, 8).join(' | '));
+  }
+}
+await page.locator('#tabs button[data-tab="prs"]').click();
+for (const scheme of ['light', 'dark']) {
+  await page.emulateMedia({ colorScheme: scheme });
+  await page.click('#add-pr');
+  await page.waitForSelector('dialog[open]');
+  const bad = await contrast();
+  check(`contrast, ${scheme}, the dialog to add a pull request`, bad.length === 0, bad.slice(0, 8).join(' | '));
+  await page.keyboard.press('Escape');
+  check('Escape closes it and the focus goes back to the button that opened it', (await page.locator('dialog[open]').count()) === 0 && (await page.evaluate(() => document.activeElement?.id)) === 'add-pr');
+}
+await page.emulateMedia({ colorScheme: 'light' });
+
+console.log('== audit: narrow screen');
+await page.setViewportSize({ width: 360, height: 740 });
+for (const tab of ['prs', 'log', 'options']) {
+  await page.locator(`#tabs button[data-tab="${tab}"]`).click();
+  await sleep(150);
+  const overflow = await page.evaluate(() => ({ page: document.documentElement.scrollWidth - document.documentElement.clientWidth, wide: [...document.querySelectorAll('body *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > innerWidth + 1 && !e.closest('[hidden]') && !e.closest('.log') && getComputedStyle(e).position !== 'fixed'; }).map((e) => `${e.tagName.toLowerCase()}.${String(e.className).split(' ')[0]}`).slice(0, 5) }));
+  check(`no horizontal scroll at 360 px, tab ${tab}`, overflow.page <= 0 && overflow.wide.length === 0, JSON.stringify(overflow));
+  if (tab === 'options') {
+    for (const panel of await page.locator('.options .subtabs button').all()) {
+      await panel.click();
+      const wide = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      check(`no horizontal scroll at 360 px, options › ${(await panel.textContent()).trim()}`, wide <= 0, String(wide));
+    }
+  }
+}
+const tiny = await page.evaluate(() => [...document.querySelectorAll('#tabs button, #tab-prs button')].filter((b) => { const r = b.getBoundingClientRect(); return r.width > 0 && (r.width < 24 || r.height < 24); }).length);
+check('the buttons stay at least 24 px wide and tall at 360 px', tiny === 0, String(tiny));
+await page.setViewportSize({ width: 1200, height: 900 });
+
+console.log('== audit: a long report in the journal');
+const longReport = `${Array.from({ length: 80 }, (_, i) => `Point ${i} du rapport : une phrase assez longue pour dépasser largement les anciens plafonds de caractères du journal.`).join('\n')}\nDERNIERE-LIGNE-DU-RAPPORT\nPR-WATCH: OK`;
+fs.appendFileSync(`${info.home}/daemon.log`, `2026-11-26 09:28:12 fake-repo#1: claude exited 0\n${longReport}\n`);
+await page.locator('#tabs button[data-tab="log"]').click();
+await page.click('#log-refresh');
+await page.waitForFunction(() => document.getElementById('log').innerText.includes('DERNIERE-LIGNE-DU-RAPPORT'));
+check('the journal shows a report of 8 000 characters whole, from its first line to its verdict', (await page.locator('#log').innerText()).includes('Point 0 du rapport') && (await page.locator('.verdict-OK').count()) >= 1);
+
+console.log('== audit: a Jira error page in the journal');
+fs.appendFileSync(`${info.home}/daemon.log`, '2026-11-26 09:29:00 git-hooks#4: ticket PROJ-1 not read, the PR will not wait for it (Jira a refusé (503) : page d\'erreur du site (Oops - an error has occurred))\n');
+await page.click('#log-refresh');
+await page.waitForFunction(() => document.getElementById('log').innerText.includes('Oops - an error has occurred'));
+check('the error is one readable line, no markup', (await page.locator('#log script, #log link, #log style').count()) === 0);
+
+console.log('== audit: the journal gets large');
+check('a small journal raises no warning', await page.locator('#log-banner').isHidden());
+fs.appendFileSync(`${info.home}/daemon.log`, '2026-11-26 09:30:00 fake-repo#1: fill\n'.repeat(1));
+fs.appendFileSync(`${info.home}/daemon.log`, `${'2026-11-26 09:30:01 fake-repo#1: remplissage '.padEnd(200, 'z')}\n`.repeat(8200));
+await page.evaluate(() => globalThis.dispatchEvent(new Event('focus')));
+await page.waitForSelector('#log-banner:not([hidden])', { timeout: 15000 }).catch(() => {});
+check('a journal past 1.5 MB raises a warning that says the size out of 2 MB', (await page.locator('#log-banner').isVisible()) && /Mo sur 2 Mo/.test(await page.locator('#log-banner').innerText()));
+check('the warning is in the journal tab only', await page.evaluate(() => document.getElementById('tab-log').contains(document.getElementById('log-banner'))));
+await page.click('#log-archive');
+await page.getByRole('button', { name: 'Archiver' }).last().click();
+await page.waitForSelector('#log-banner', { state: 'hidden', timeout: 15000 }).catch(() => {});
+check('archiving the journal removes the warning', await page.locator('#log-banner').isHidden());
+check('and keeps the archive', fs.readdirSync(`${info.home}/journal-archives`).some((name) => name.startsWith('daemon-')));
+
 console.log('== screenshots');
 await page.locator('#tabs button[data-tab="prs"]').click();
 console.log('== the bar of the list');
