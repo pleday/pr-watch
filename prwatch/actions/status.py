@@ -185,7 +185,7 @@ def overview():
                 **{key: entry.get(key) for key in (
                     'repo', 'pr', 'title', 'branch', 'state', 'attempts', 'lastPipeline', 'ready', 'mergeBlockers', 'changesRequestedBy', 'group',
                     'needsAttention', 'lastReportAt', 'sessionId', 'sessionCwd', 'workDir', 'forceWake', 'doneReason', 'pendingQuestions',
-                    'mergeDefault', 'mergeAllowed', 'activity', 'autoMergeNote',
+                    'mergeDefault', 'mergeAllowed', 'activity', 'autoMergeNote', 'destination', 'commitScopes',
                 )},
                 'removeInMinutes': remove_in(entry, cfg),
                 'hasReport': bool(entry.get('lastReport')),

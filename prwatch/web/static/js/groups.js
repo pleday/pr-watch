@@ -1,11 +1,11 @@
 // The list of pull requests, arranged: by hand (groups the user names, in the order they want, cards dragged into place, all kept
-// by the server) or by ticket or repository (computed, read-only). The cards themselves come from cards.js.
+// by the server) or by ticket or repository, scope or mainfeature (computed, read-only). The cards themselves come from cards.js.
 import { S, act, ask, confirmDialog, h, icon, toast } from './core.js';
 import { t } from './i18n.js';
 
 const MODE_KEY = 'pw-group-by';
 const COLLAPSED_KEY = 'pw-groups-collapsed';
-export const MODES = ['none', 'manual', 'ticket', 'repo'];  // no grouping, the user's groups, by ticket, by repository
+export const MODES = ['none', 'manual', 'ticket', 'repo', 'feature', 'mainfeature'];  // no grouping, the user's groups, then the computed ones
 
 const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; } catch { return fallback; } };
 const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* the choice lasts until the page closes */ } };
@@ -31,6 +31,26 @@ export function levelOf(entries) {
 }
 const LEVEL_ICON = { red: 'failed', orange: 'changes', green: 'ready' };
 
+/** The scope of a PR: the one of its Conventional Commits title, 'feat(e2e): …' -> 'e2e'; without one, the scope most of its commits
+ * have; null when there is none. */
+export const featureOf = (entry) => {
+  const title = /^\w+!?\(([^)]+)\)/.exec(entry.title || '')?.[1].trim();
+  if (title) return title;
+  const counts = new Map();
+  for (const scope of entry.commitScopes || []) counts.set(scope, (counts.get(scope) || 0) + 1);
+  return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+};
+
+/** The mainfeature a PR belongs to: 'mainfeature/x' -> 'x', read from the branch it targets, else from its own branch. */
+export const mainfeatureOf = (entry) => [entry.destination, entry.branch].map((b) => /^mainfeature\/(.+)$/.exec(b || '')?.[1]).find(Boolean) || null;
+
+const COMPUTED = {
+  ticket: (entry) => entry.ticket || t('groups.noTicket'),
+  repo: (entry) => entry.repo,
+  feature: (entry) => featureOf(entry) || t('groups.noFeature'),
+  mainfeature: (entry) => mainfeatureOf(entry) || t('groups.noMainfeature'),
+};
+
 /** The sections to draw: [{name, label, entries, ...}] — name '' is the PRs of no group (manual mode). */
 export function sectionsOf(entries, mode, names = []) {
   if (mode === 'none') return [{ name: '', label: '', entries, flat: true }];
@@ -42,7 +62,7 @@ export function sectionsOf(entries, mode, names = []) {
   }
   const by = new Map();
   for (const entry of entries) {
-    const name = mode === 'ticket' ? (entry.ticket || t('groups.noTicket')) : entry.repo;
+    const name = COMPUTED[mode](entry);
     by.set(name, [...(by.get(name) || []), entry]);
   }
   return [...by].map(([name, list]) => ({ name, label: name, entries: list, readOnly: true }));

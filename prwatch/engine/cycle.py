@@ -17,6 +17,13 @@ def handle(entry, cfg, dry_run):
         return
     if entry.get('title') != pr['title'] and not dry_run:
         pwstore.update_entry(entry, title=pr['title'])
+    destination = ((pr.get('destination') or {}).get('branch') or {}).get('name')
+    if destination and entry.get('destination') != destination and not dry_run:  # kept for the grouping by mainfeature
+        pwstore.update_entry(entry, destination=destination)
+    if not dry_run and not pwbitbucket.SCOPE.match(pr['title']):  # a title without scope: the commits say what the PR is about
+        scopes = pwbitbucket.commit_scopes(entry)
+        if scopes is not None and scopes != entry.get('commitScopes'):
+            pwstore.update_entry(entry, commitScopes=scopes)
     strategies = pwmerging.merge_strategies(entry, pr)
     if not dry_run and (entry.get('mergeDefault'), entry.get('mergeAllowed')) != (strategies.get('default'), strategies.get('allowed')):
         pwstore.update_entry(entry, mergeDefault=strategies.get('default'), mergeAllowed=strategies.get('allowed'))
@@ -56,6 +63,8 @@ def handle(entry, cfg, dry_run):
     ask_user(entry, pr, cfg, asked, dry_run)
     suspended = bool(pwstore.suspension()) and not dry_run
     to_claude, to_rerun, to_tell = pwconfig.route([e for e in actionable if e not in asked], settings, claude_disabled=suspended)
+    # what Claude would have handled is only notified while suspended, and the cursors move on: remember it, the reactivation checks the PR
+    missed = {'missedWhileSuspended': True} if suspended and pwconfig.route([e for e in actionable if e not in asked], settings, claude_disabled=False)[0] else {}
     tell_events(entry, pr, cfg, to_tell, dry_run)
     if to_rerun and not to_claude and not forced:
         handle_infra(entry, pr, cfg, to_rerun, cursors, dry_run)
@@ -64,7 +73,7 @@ def handle(entry, cfg, dry_run):
     events = [e for e in events if e in actionable or not e['actionable']]
     if not actionable:
         if not dry_run:
-            changes = dict(cursors)
+            changes = {**cursors, **missed}
             if forced:
                 changes['forceWake'] = False
             if suspended:
@@ -87,7 +96,7 @@ def handle(entry, cfg, dry_run):
     if pwstore.suspension() and not dry_run:
         _, _, deferred = pwconfig.route(to_claude, settings, claude_disabled=True)
         tell_events(entry, pr, cfg, deferred, dry_run)
-        changes = dict(cursors)
+        changes = {**cursors, **missed, 'missedWhileSuspended': True}
         if forced:
             changes['forceWake'] = False
         if any(event.get('kind') == 'user-decision' for event in deferred):

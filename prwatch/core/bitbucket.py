@@ -3,6 +3,7 @@
 import base64
 import json
 import os
+import re
 import time
 import urllib.request
 
@@ -104,6 +105,17 @@ def all_comments(entry):
             break
         path, params = data['next'], None
     return comments
+
+
+SCOPE = re.compile(r'^\w+!?\(([^)]+)\)')
+
+
+def commit_scopes(entry):
+    """The Conventional Commits scopes of the PR's commits ('feat(e2e): …' -> 'e2e'), one per commit that has one; None when the read fails."""
+    found = api(f"{repo_path(entry)}/pullrequests/{entry['pr']}/commits", {'pagelen': 50})
+    if found is None:
+        return None
+    return [m.group(1).strip() for c in found.get('values', []) if (m := SCOPE.match((c.get('message') or '').strip()))]
 
 
 def rerun_pipeline(entry, pr):

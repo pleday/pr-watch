@@ -4,6 +4,10 @@
 
 ## Non publié
 
+- **Vérification des PR à la réactivation.** Les événements reçus pendant la suspension (forfait presque épuisé) étaient seulement notifiés puis oubliés : après « Réactiver », rien ne réveillait Claude. Les PR concernées sont maintenant repérées, et la réactivation (manuelle ou automatique) demande un contrôle immédiat de chacune.
+
+- **Groupements par scope et par mainfeature.** Le menu de la barre des PR propose deux groupements calculés de plus : *Par scope*, qui prend comme point commun le scope du titre (`feat(e2e): …` → `e2e`), à défaut celui de ses commits, et *Par mainfeature*, qui range les PR visant (ou venant de) une branche `mainfeature/x` sous `x`.
+
 ## 0.1.7 — 2026-11-27
 
 - **Réorganiser et regrouper les PR.** Le menu de la barre des PR propose : *Aucun groupement*, *Groupement personnalisé*, *Par ticket* et *Par dépôt* (ces deux derniers calculés, en lecture seule). En mode personnalisé, « Nouveau groupe » crée un groupe qu'on nomme (il peut être vide), « Grouper… » sur une carte y range une PR, et chaque groupe peut être renommé ou supprimé (ses PR restent dans la liste). Les PR et les groupes se réordonnent par glisser-déposer sur la poignée ⠿, ou au clavier (focus sur la poignée, flèches haut et bas). Un groupe est un conteneur teinté, avec un rail et un bandeau d'en-tête qui donne : l'icône de son pire état, son nom, le nombre de PR et, par état, combien de PR (en échec, à voir, modifications demandées, prête…). L'icône et la couleur suivent la pire PR : rouge si une PR est en échec ou demande votre attention, sinon orange si des modifications sont demandées, sinon vert si une PR est prête à merger, sinon neutre ; ce sont les couleurs choisies dans Options › Affichage des cartes. L'ordre et les groupes sont enregistrés par le serveur (registre et `groups.json`), communs à la fenêtre et aux onglets du navigateur. Les boutons de la barre des PR tiennent sur une ligne (actualiser, tout déplier, tout replier, tout marquer comme vu deviennent des icônes). Le filtre cherche aussi dans le nom du groupe. `pr-watch register` laisse la PR dans son groupe.
@@ -99,6 +103,10 @@
 # Changelog (English)
 
 ## Unreleased
+
+- **PRs are checked on reactivation.** Events received during the suspension (plan almost used up) were only notified and then forgotten: after "Reactivate", nothing woke Claude. The PRs concerned are now flagged, and the reactivation (manual or automatic) asks for an immediate check of each.
+
+- **Grouping by scope and by mainfeature.** The menu of the PR bar offers two more computed groupings: *By scope*, whose common point is the scope of the title (`feat(e2e): …` → `e2e`), or else the one of its commits, and *By mainfeature*, which files the PRs targeting (or coming from) a `mainfeature/x` branch under `x`.
 
 ## 0.1.7 — 2026-11-27
 

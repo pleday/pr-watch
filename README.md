@@ -265,8 +265,9 @@ Une seule fenêtre, la même sur tous les systèmes : le tableau de bord web. Le
   *Options › Affichage des cartes* regroupe les actions affichées et les couleurs : palette par défaut, daltonisme (bleu, orange, rose),
   contraste élevé ou trois couleurs personnalisées, et une case pour ajouter un style de cadre (pointillé, double) afin de ne pas
   dépendre de la couleur seule. Le choix est retenu par le navigateur ; l'icône de barre garde ses couleurs.
-- **Réorganiser et regrouper** : le menu de la barre des PR propose *Aucun groupement*, *Groupement personnalisé*, *Par ticket* et
-  *Par dépôt* (calculés, en lecture seule). En mode personnalisé, « Nouveau groupe » crée un groupe nommé (éventuellement vide),
+- **Réorganiser et regrouper** : le menu de la barre des PR propose *Aucun groupement*, *Groupement personnalisé*, *Par ticket*,
+  *Par dépôt*, *Par scope* (le scope du titre, `feat(e2e): …` → `e2e`, sinon celui de ses commits) et *Par mainfeature* (`mainfeature/x`, lue sur la branche
+  visée par la PR) (calculés, en lecture seule). En mode personnalisé, « Nouveau groupe » crée un groupe nommé (éventuellement vide),
   « Grouper… » sur une carte y range une PR, un groupe se renomme ou se supprime (ses PR restent dans la liste). PR et groupes se
   réordonnent en glissant la poignée ⠿ (ou focus puis flèches haut et bas). L'en-tête d'un groupe donne l'icône de son pire état, son
   nom, le nombre de PR et le détail par état ; sa couleur suit la pire PR (rouge : échec ou attention, orange : modifications

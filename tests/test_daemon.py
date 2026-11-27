@@ -758,6 +758,16 @@ class OutOfTokensTest(unittest.TestCase):
         self.assertIsNone(pwstore.suspension())
         self.assertFalse(pwstore.resume())
 
+    def test_resume_asks_for_a_check_of_the_prs_whose_events_were_only_notified(self):
+        set_registry([entry(1, missedWhileSuspended=True), entry(2), entry(3, state='done', missedWhileSuspended=True)])
+        pwstore.suspend('usage limit reached')
+        pwstore.resume()
+        first, second, third = registry()
+        self.assertTrue(first['forceWake'])
+        self.assertNotIn('missedWhileSuspended', first)
+        self.assertNotIn('forceWake', second)
+        self.assertNotIn('forceWake', third)
+
 
 class UsageGateTest(unittest.TestCase):
     def setUp(self):

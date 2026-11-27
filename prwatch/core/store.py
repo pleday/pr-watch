@@ -200,7 +200,18 @@ def resume(override=True):
         return False
     if override and current and current['kind'] == 'usage':
         USAGE_OVERRIDE.write_text(json.dumps({'until': current['until']}), encoding='utf-8')
+    recheck_missed()
     return True
+
+
+def recheck_missed():
+    """Asks for a check of the PRs whose events were only notified during the suspension: their cursors moved on, so nothing else would wake Claude."""
+    with registry_lock():
+        entries = load_registry()
+        for entry in entries:
+            if entry.pop('missedWhileSuspended', False) and entry.get('state', 'watching') == 'watching':
+                entry['forceWake'] = True
+        save_registry(entries)
 
 
 def usage_override_active():
