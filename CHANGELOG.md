@@ -4,6 +4,8 @@
 
 ## Non publié
 
+## 0.1.8 — 2026-11-27
+
 - **Vérification des PR à la réactivation.** Les événements reçus pendant la suspension (forfait presque épuisé) étaient seulement notifiés puis oubliés : après « Réactiver », rien ne réveillait Claude. Les PR concernées sont maintenant repérées, et la réactivation (manuelle ou automatique) demande un contrôle immédiat de chacune.
 
 - **Groupements par scope et par mainfeature.** Le menu de la barre des PR propose deux groupements calculés de plus : *Par scope*, qui prend comme point commun le scope du titre (`feat(e2e): …` → `e2e`), à défaut celui de ses commits, et *Par mainfeature*, qui range les PR visant (ou venant de) une branche `mainfeature/x` sous `x`.
@@ -103,6 +105,8 @@
 # Changelog (English)
 
 ## Unreleased
+
+## 0.1.8 — 2026-11-27
 
 - **PRs are checked on reactivation.** Events received during the suspension (plan almost used up) were only notified and then forgotten: after "Reactivate", nothing woke Claude. The PRs concerned are now flagged, and the reactivation (manual or automatic) asks for an immediate check of each.
 
