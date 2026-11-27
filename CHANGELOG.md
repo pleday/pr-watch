@@ -4,6 +4,8 @@
 
 ## Non publié
 
+## 0.1.6 — 2026-11-27
+
 - **Cartes encadrées : modifications demandées (orange) et pipeline en échec (rouge).** Comme une PR prête à merger est encadrée en vert, une PR dont un relecteur a choisi « Request changes » est entourée d'orange (icône et pastille « Modifications demandées », relecteurs nommés dans l'info-bulle et les détails) et une PR dont un pipeline a échoué est entourée de rouge (« Pipeline en échec »). Elles comptent dans le filtre « Besoin d'attention » et dans le menu de l'icône de barre. Claude n'est pas réveillé pour autant (un pipeline en échec le réveillait déjà).
 - **Options › Affichage des cartes.** Le panneau « Cartes » devient « Affichage des cartes » et regroupe tout ce qui change l'aspect des cartes : les actions affichées, puis les couleurs. Palettes des états : par défaut, daltonisme (bleu, orange, rose), contraste élevé ou trois couleurs personnalisées ; une case ajoute un style de cadre (pointillé, double) pour ne pas dépendre de la couleur seule. Le choix est retenu par le navigateur ; l'icône de barre garde ses couleurs.
 - **Journal : ce que Claude a fait, et des filtres en plus.** À chaque réveil, le journal liste les événements qui l'ont déclenché, puis chaque commit fait (message, description, lien vers le commit sur Bitbucket), chaque réponse postée et chaque fil résolu (lien vers le commentaire) ; le numéro de la PR devient un lien. Deux filtres s'ajoutent : *Période* (dernière heure, aujourd'hui, 24 h, 7 jours) et *Types de lignes* (une case par type, retenues d'une visite à l'autre).
@@ -93,6 +95,8 @@
 # Changelog (English)
 
 ## Unreleased
+
+## 0.1.6 — 2026-11-27
 
 - **Framed cards: changes requested (orange) and failed pipeline (red).** Like a PR ready to merge is framed in green, a PR on which a reviewer chose "Request changes" is framed in orange (icon and "Changes requested" chip, reviewers named in the tooltip and the details) and a PR with a failed pipeline is framed in red ("Pipeline failed"). They count in the "Needs attention" filter and in the tray menu. Claude is not woken for it (a failed pipeline already woke it).
 - **Settings › Card display.** The "Cards" panel becomes "Card display" and gathers everything that changes how the cards look: the actions shown, then the colours. Palettes of the states: default, colour blindness (blue, orange, pink), high contrast or three custom colours; a box adds a frame style (dashed, double) so as not to rely on colour alone. The choice is kept by the browser; the tray icon keeps its colours.
