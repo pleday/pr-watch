@@ -5,6 +5,7 @@ import { addPrDialog, usageDialog, usageLevel } from './dialogs.js';
 import { refreshLog, renderLogPrs, selectTab } from './journal.js';
 import { applyPermissions, checkPermissions, checkPlugins, permissionsDialog, renderOptions } from './options.js';
 import { applyColors } from './colors.js';
+import { enableDrag, groupMode, newGroupDialog, renderList, setGroupMode } from './groups.js';
 import { applyStaticTranslations, formatDateTime, language, locale, t } from './i18n.js';
 
 /** A battery filled to `percent`, in the colour of its `level`. */
@@ -138,7 +139,10 @@ function renderState(state) {
       h('button', { class: 'btn warning', type: 'button', title: t('suspension.resumeAnyway'), onclick: () => act('resume') }, t('suspension.resumeButton')));
   }
   const prs = document.getElementById('prs');
-  prs.replaceChildren(...(state.entries.length ? state.entries.map((entry) => card(entry, state)) : [h('div', { class: 'empty' }, t('pr.none'))]));
+  if (state.entries.length) renderList(prs, state.entries, state, card);
+  else prs.replaceChildren(h('div', { class: 'empty' }, t('pr.none')));
+  document.getElementById('pr-group').value = groupMode();
+  document.getElementById('pr-new-group').hidden = groupMode() !== 'manual';
   renderLogPrs(state.entries);
   applyFocus(state.focus);
   applyFilter();
@@ -188,7 +192,7 @@ async function refreshState(force = false) {
     const json = JSON.stringify(state);
     // The page is rebuilt only when something changed, so a button under the pointer is not replaced mid-click.
     // ... and not while the user types in one of its fields (the answer to a question of a reviewer)
-    const typing = !force && (document.activeElement?.matches?.('#prs input') || document.querySelector('#prs .menu'));
+    const typing = !force && (S.dragging || document.activeElement?.matches?.('#prs input') || document.querySelector('#prs .menu'));
     if ((force || json !== S.lastStateJson) && !typing) {
       S.lastStateJson = json;
       S.lastState = state;
@@ -238,14 +242,18 @@ document.getElementById('add-pr').addEventListener('click', addPrDialog);
 
 function renderToolbarLabels() {
   for (const [id, name, key] of [
-    ['refresh-prs', 'reset', 'common.refresh'],
-    ['expand-all', 'expand', 'toolbar.expand'],
-    ['collapse-all', 'collapse', 'toolbar.collapse'],
-    ['ack-all', 'check', 'toolbar.acknowledge'],
     ['add-pr', 'add', 'pr.add'],
+    ['pr-new-group', 'group', 'groups.newButton'],
   ]) {
     const node = document.getElementById(id);
     node.replaceChildren(icon(name), t(key));
+  }
+  // the other buttons of the bar are icons (the name stays as tooltip and for screen readers): the bar fits on one line
+  for (const [id, name, key] of [['refresh-prs', 'reset', 'common.refresh'], ['expand-all', 'expand', 'toolbar.expand'], ['collapse-all', 'collapse', 'toolbar.collapse'], ['ack-all', 'check', 'toolbar.acknowledge']]) {
+    const node = document.getElementById(id);
+    node.replaceChildren(icon(name));
+    node.setAttribute('aria-label', t(key));
+    node.setAttribute('title', id === 'refresh-prs' ? `${t(key)} (F5)` : t(key));
   }
   // buttons of the journal: an icon, the name only as tooltip and for screen readers (they would not fit on the line of the filters)
   for (const [id, name, key] of [['log-refresh', 'reset', 'common.refresh'], ['log-archive', 'archive', 'log.archive']]) {
@@ -257,6 +265,9 @@ function renderToolbarLabels() {
 }
 
 renderToolbarLabels();
+enableDrag(document.getElementById('prs'));
+document.getElementById('pr-new-group').addEventListener('click', newGroupDialog);
+document.getElementById('pr-group').addEventListener('change', (event) => { setGroupMode(event.target.value); S.lastStateJson = ''; S.refresh(true); });
 applyColors();
 applyStaticTranslations();
 

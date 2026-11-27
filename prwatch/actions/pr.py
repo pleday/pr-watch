@@ -180,6 +180,51 @@ def answer_question(repo, pr, id, choice, note=''):
     return pwcommon._result(True, messages[choice])
 
 
+GROUP_NAME_MAX = 60
+
+
+def set_layout(order, groups, names=None):
+    """Saves how the user arranged the list: the order of the pull requests (the registry's own order) and their groups.
+
+    `order` lists `repo#N` keys, top to bottom; the entries it does not name (added meanwhile) keep their relative order
+    after the others. `groups` maps a key to its group name, '' meaning no group; the keys it does not name keep theirs.
+    `names`, when given, is the list of the groups in their order, empty ones included (it replaces the stored list).
+    """
+    if not isinstance(order, list) or not all(isinstance(k, str) for k in order) or not isinstance(groups, dict) or not (names is None or isinstance(names, list)):
+        return pwcommon._result(False, 'Ordre ou groupes invalides.')
+    invalid = pwcommon._result(False, f'Nom de groupe invalide (au plus {GROUP_NAME_MAX} caractères).')
+    clean_name = lambda name: ' '.join(name.split()) if isinstance(name, str) and not any(ord(c) < 32 for c in name) and len(name) <= GROUP_NAME_MAX else None
+    members = {}
+    for key, name in groups.items():
+        if (clean := clean_name(name)) is None:
+            return invalid
+        members[key] = clean
+    listed = None
+    if names is not None:
+        cleaned = [clean_name(n) for n in names]
+        if any(not n for n in cleaned):
+            return invalid
+        listed = list(dict.fromkeys(cleaned))
+        if len({n.casefold() for n in listed}) != len(listed):
+            return pwcommon._result(False, 'Deux groupes portent le même nom.')
+    with pwstore.registry_lock():
+        entries = pwstore.load_registry()
+        by_key = {pwstore.key_of(e): e for e in entries}
+        wanted = [by_key[k] for k in dict.fromkeys(order) if k in by_key]
+        rest = [e for e in entries if e not in wanted]
+        for key, name in members.items():
+            if key not in by_key:
+                continue
+            if name:
+                by_key[key]['group'] = name
+            else:
+                by_key[key].pop('group', None)
+        pwstore.save_registry(wanted + rest)
+        if listed is not None:
+            pwstore.save_groups(listed)
+    return pwcommon._result(True, 'Rangement enregistré.')
+
+
 def wake(repo, pr):
     entry = pwcommon._entry(repo, pr)
     if not entry:

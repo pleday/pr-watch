@@ -265,6 +265,13 @@ Une seule fenêtre, la même sur tous les systèmes : le tableau de bord web. Le
   *Options › Affichage des cartes* regroupe les actions affichées et les couleurs : palette par défaut, daltonisme (bleu, orange, rose),
   contraste élevé ou trois couleurs personnalisées, et une case pour ajouter un style de cadre (pointillé, double) afin de ne pas
   dépendre de la couleur seule. Le choix est retenu par le navigateur ; l'icône de barre garde ses couleurs.
+- **Réorganiser et regrouper** : le menu de la barre des PR propose *Aucun groupement*, *Groupement personnalisé*, *Par ticket* et
+  *Par dépôt* (calculés, en lecture seule). En mode personnalisé, « Nouveau groupe » crée un groupe nommé (éventuellement vide),
+  « Grouper… » sur une carte y range une PR, un groupe se renomme ou se supprime (ses PR restent dans la liste). PR et groupes se
+  réordonnent en glissant la poignée ⠿ (ou focus puis flèches haut et bas). L'en-tête d'un groupe donne l'icône de son pire état, son
+  nom, le nombre de PR et le détail par état ; sa couleur suit la pire PR (rouge : échec ou attention, orange : modifications
+  demandées, vert : une PR prête, sinon neutre), avec les couleurs d'*Options › Affichage des cartes*. L'ordre et les groupes sont
+  enregistrés par le serveur (registre, `groups.json`).
 - **Journal** : il dit aussi ce que Claude a fait à chaque réveil : les événements qui l'ont déclenché, chaque commit (message,
   description et lien vers Bitbucket), chaque réponse postée et chaque fil résolu (lien vers le commentaire) ; le numéro de la PR
   renvoie à la PR. Aux filtres existants (type, PR, recherche) s'ajoutent *Période* (dernière heure, aujourd'hui, 24 h, 7 jours) et
@@ -670,6 +677,12 @@ A single window, the same on all systems: the web dashboard. The interface code 
   gathers the actions shown and the colours: default palette, colour blindness (blue, orange, pink), high contrast or three custom
   colours, and a box to add a frame style (dashed, double) so as not to rely on colour alone. The choice is kept by the browser; the
   tray icon keeps its colours.
+- **Rearranging and grouping**: the menu of the PR bar offers *No grouping*, *Custom grouping*, *By ticket* and *By repository*
+  (computed, read-only). In custom mode, "New group" creates a named group (possibly empty), "Group…" on a card puts a PR in it, a
+  group can be renamed or deleted (its PRs stay in the list). PRs and groups are reordered by dragging the ⠿ grip (or focus it and use
+  the up and down arrows). The head of a group gives the icon of its worst state, its name, the number of PRs and the detail per
+  state; its colour follows the worst PR (red: failed or attention, orange: changes requested, green: a PR is ready, else neutral),
+  with the colours of *Settings › Card display*. The order and the groups are stored by the server (registry, `groups.json`).
 - **Activity log**: it also says what Claude did at each wake-up: the events that triggered it, each commit (message, description and
   link to Bitbucket), each reply posted and each thread resolved (link to the comment); the PR number links to the PR. On top of the
   existing filters (type, PR, search) come *Period* (last hour, today, 24 h, 7 days) and *Kinds of lines* (wake-ups, commits, replies,

@@ -927,3 +927,40 @@ class JournalActionTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class LayoutTest(unittest.TestCase):
+    def setUp(self):
+        set_registry([entry(1), entry(2, group='Lot A'), entry(3)])
+
+    def test_the_order_and_the_groups_are_saved_in_the_registry(self):
+        result = pwpr.set_layout(['fake-repo#3', 'fake-repo#1', 'fake-repo#2'], {'fake-repo#1': ' Lot   B ', 'fake-repo#2': ''})
+        self.assertTrue(result['ok'])
+        self.assertEqual([(e['pr'], e.get('group')) for e in registry()], [(3, None), (1, 'Lot B'), (2, None)])
+
+    def test_what_the_request_does_not_name_is_kept(self):
+        pwpr.set_layout(['fake-repo#3'], {})
+        self.assertEqual([(e['pr'], e.get('group')) for e in registry()], [(3, None), (1, None), (2, 'Lot A')])
+        pwpr.set_layout(['fake-repo#9', 'fake-repo#2'], {'fake-repo#9': 'x'})  # an unknown PR is ignored
+        self.assertEqual([e['pr'] for e in registry()], [2, 3, 1])
+
+    def test_invalid_requests_change_nothing(self):
+        for order, groups in ((None, {}), (['a'], []), ([1], {}), ([], {'fake-repo#1': 'x' * 61}), ([], {'fake-repo#1': 'a\nb'}), ([], {'fake-repo#1': 3})):
+            self.assertFalse(pwpr.set_layout(order, groups)['ok'], (order, groups))
+        self.assertEqual([(e['pr'], e.get('group')) for e in registry()], [(1, None), (2, 'Lot A'), (3, None)])
+
+    def test_the_list_of_groups_keeps_empty_groups_and_their_order(self):
+        self.assertTrue(pwpr.set_layout([], {}, ['Lot B', 'Lot A', 'Vide'])['ok'])
+        self.assertEqual(pwstore.load_groups(), ['Lot B', 'Lot A', 'Vide'])
+        self.assertTrue(pwpr.set_layout([], {})['ok'])  # no list given: the stored one stays
+        self.assertEqual(pwstore.load_groups(), ['Lot B', 'Lot A', 'Vide'])
+        for bad in (['a', 'A'], [''], ['x' * 61], [3], 'nope'):
+            self.assertFalse(pwpr.set_layout([], {}, bad)['ok'], bad)
+        self.assertEqual(pwstore.load_groups(), ['Lot B', 'Lot A', 'Vide'])
+        self.assertEqual(actions.perform({'action': 'layout', 'order': [], 'groups': {}})['ok'], True)  # `names` is optional for the web page
+
+    def test_registering_again_keeps_the_group(self):
+        from prwatch.engine import registration
+        with mock.patch.object(pwbitbucket, 'max_comment_id', return_value=0), mock.patch.object(pwbitbucket, 'max_pipeline', return_value=0):
+            registration.register_pr('fake-repo', 2, 'b', '/w', 's', '/w')
+        self.assertEqual(registry()[-1].get('group'), 'Lot A')

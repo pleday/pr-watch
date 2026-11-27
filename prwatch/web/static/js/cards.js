@@ -2,6 +2,7 @@
 import { ICONS, S, act, askServer, featureHidden, h, icon, loadedAt } from './core.js';
 import { formatDateTime, t } from './i18n.js';
 import { confirmAction, mergeDialog, openSession, ownChoices, pushDialog, settingsDialog, ticketDialog } from './dialogs.js';
+import { dragHandle, groupDialog, groupMode } from './groups.js';
 import { selectTab, showJournal } from './journal.js';
 
 export function questionBox(entry, question) {
@@ -31,6 +32,7 @@ export function applyFilter() {
     card.hidden = !match;
     if (match) shown += 1;
   }
+  for (const group of document.querySelectorAll('#prs .group')) group.hidden = !group.querySelector('.card:not([hidden])') && cards.length > 0 && (words.length > 0 || actionable);
   const filtering = words.length > 0 || actionable;
   document.getElementById('pr-count').textContent = !filtering || !cards.length ? '' : shown ? `${shown} sur ${cards.length}` : 'Aucune PR ne correspond';
 }
@@ -67,6 +69,7 @@ export function cardActions(entry) {
     { id: 'ticketOpen', label: `Ouvrir ${entry.ticket || 'le ticket'}`, icon: 'ticket', show: Boolean(entry.ticketUrl), run: () => act('open-link', { url: entry.ticketUrl }) },
     { id: 'ticket', label: 'État du ticket…', icon: 'status', show: Boolean(entry.ticket) && !featureHidden('ticket'), run: () => ticketDialog(entry) },
     { id: 'merge', label: 'Merger la PR…', icon: 'merge', kind: entry.ready ? 'good' : '', show: !done && !entry.mergePointless && !featureHidden('merge'), run: () => mergeDialog(entry) },
+    { id: 'group', label: entry.group ? `Groupe : ${entry.group}…` : 'Grouper…', icon: 'group', show: groupMode() === 'manual', run: () => groupDialog(entry) },
     { id: 'unwatch', label: done ? 'Retirer de la liste' : 'Arrêter la surveillance', icon: 'stop', kind: 'danger', show: true, run: () => confirmAction(entry, 'unwatch').then((ok) => ok && act('unwatch', target, true)) },
   ].filter((action) => action.show);
 }
@@ -87,7 +90,7 @@ export function moreMenu(actions) {
   return wrap;
 }
 
-export function card(entry, state) {
+export function card(entry, state, arrangeable = false) {
   const maxAttempts = state.maxAttempts;
   const target = { repo: entry.repo, pr: entry.pr };
   const { kind, label } = entry.status;
@@ -103,6 +106,7 @@ export function card(entry, state) {
   const mini = (action) => h('button', { class: `btn mini ${action.kind === 'primary' || action.kind === 'good' ? action.kind : ''} ${unread(action) ? 'has-pill' : ''}`, type: 'button', title: reportTip(action), 'aria-label': reportTip(action), onclick: action.run }, icon(action.icon), unread(action));
   const article = h('article', { class: `card ${entry.needsAttention ? 'attention' : ''} ${entry.ready && !entry.needsAttention ? 'ready' : ''} ${['changes', 'failed'].includes(entry.status.kind) ? entry.status.kind : ''} ${entry.state === 'done' ? 'done' : ''} ${S.focusKey === `${entry.repo}#${entry.pr}` ? 'focus' : ''}` },
     h('div', { class: 'card-head' },
+      arrangeable ? dragHandle(entry) : null,
       h('button', { class: 'toggle', type: 'button', 'aria-expanded': 'false', title: 'Étendre / réduire', 'aria-label': 'Étendre ou réduire la carte', onclick: () => setExpanded(article, !article.classList.contains('expanded')) }, icon('chevron')),
       h('span', { class: `state-icon ${kind}`, title: entry.status.tip, 'aria-label': entry.status.tip }, ICONS[kind] ? icon(kind) : entry.status.icon),
       h('a', { class: 'key', href: entry.url, target: '_blank', rel: 'noopener noreferrer' }, `${entry.repo} #${entry.pr}`),
@@ -134,7 +138,7 @@ export function card(entry, state) {
         ...actions.flatMap((action) => (action.id === 'push' ? [h('span', { class: 'sep' }), button(action)] : [button(action)])))));
   article.dataset.key = `${entry.repo}#${entry.pr}`;
   // what the filter of the list looks at
-  article.dataset.search = [entry.repo, `#${entry.pr}`, entry.title, entry.branch, entry.ticket].filter(Boolean).join(' ').toLowerCase();
+  article.dataset.search = [entry.repo, `#${entry.pr}`, entry.title, entry.branch, entry.ticket, entry.group].filter(Boolean).join(' ').toLowerCase();
   article.dataset.actionable = entry.needsAttention || ['changes', 'failed'].includes(entry.status.kind) || entry.status.kind === 'ticket-wait' || entry.pendingQuestions?.length || entry.ready || entry.state === 'gave-up' ? '1' : '';
   setExpanded(article, expandedCards.has(article.dataset.key));
   // the mark of a notification stays until the user touches the card: the cards are rebuilt at every change

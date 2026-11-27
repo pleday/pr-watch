@@ -249,6 +249,9 @@ textarea { font: inherit; width: 100%; box-sizing: border-box; padding: 8px 10px
 .prs-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
 .prs-bar #pr-filter { flex: 1 1 160px; min-width: 150px; max-width: 280px; }
 .prs-bar .spacer { flex: 1 1 0; }
+.prs-bar #refresh-prs, .prs-bar #expand-all, .prs-bar #collapse-all, .prs-bar #ack-all { padding: 0; width: 30px; flex: none; }
+@media (min-width: 900px) { .prs-bar { flex-wrap: nowrap; } .prs-bar > * { flex-shrink: 0; } .prs-bar #pr-filter { flex-shrink: 1; min-width: 110px; } }
+.btn.mini.wide { padding: 0 8px; width: auto; }
 .card[hidden] { display: none; }
 dialog .inline { display: flex; gap: 8px; }
 dialog .inline input { flex: 1; min-width: 0; }
@@ -290,3 +293,30 @@ body.frame-patterns .swatch.changes { border-style: dashed; } body.frame-pattern
 #tab-log .toolbar .btn.icon-only { padding: 0; width: 30px; flex: none; }
 @media (min-width: 900px) { #tab-log .toolbar { flex-wrap: nowrap; } #tab-log .toolbar > * { flex-shrink: 0; } #tab-log .toolbar input[type="search"] { flex-shrink: 1; } }
 @media (max-width: 800px) { .options .subtabs { flex-wrap: wrap; overflow: visible; } }
+/* the list arranged in groups: a group is a tinted container with a coloured rail and a banner for a head, the cards sit inside it */
+.group:not(.flat) { --level: var(--border); margin: 0 0 20px; padding: 0 14px 14px 16px; border: 1px solid color-mix(in srgb, var(--level) 40%, var(--border)); border-left: 7px solid var(--level); border-radius: 8px 18px 18px 8px; background: color-mix(in srgb, var(--level) 7%, var(--bg)); }
+.group.level-red { --level: var(--red); } .group.level-orange { --level: var(--orange); } .group.level-green { --level: var(--green); } .group.level-neutral { --level: var(--muted); }
+.group.loose { --level: var(--muted); border-style: dashed; border-left-style: solid; background: transparent; }
+.group.loose .group-head { background: transparent; }
+.group-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 -14px 12px -16px; padding: 10px 14px 10px 8px; border-bottom: 1px solid color-mix(in srgb, var(--level) 35%, var(--border)); border-radius: 0 16px 0 0; background: color-mix(in srgb, var(--level) 14%, var(--bg)); }
+.group.collapsed { padding-bottom: 0; } .group.collapsed .group-head { margin-bottom: 0; border-bottom: 0; border-radius: 0 16px 16px 0; }
+.group-head .toggle { background: none; border: 0; color: var(--muted); cursor: pointer; padding: 2px 4px; }
+.group-head .toggle svg { transition: transform .12s; } .group.collapsed .group-head .toggle svg { transform: rotate(-90deg); }
+.group-head .spacer { flex: 1 1 0; }
+.group-state { display: inline-flex; } .group-state.red { color: var(--red); } .group-state.orange { color: var(--orange); } .group-state.green { color: var(--green); } .group-state.neutral { color: var(--muted); }
+.group-name { font-size: 17px; letter-spacing: -.01em; }
+.group-count { color: var(--muted); font-size: 12px; }
+.gchip { display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; border: 1px solid currentColor; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 20px; color: var(--muted); }
+.gchip .gcount { font-weight: 800; }
+.gchip.failed, .gchip.attention, .gchip.gave-up { color: var(--red); } .gchip.question, .gchip.ticket-wait { color: var(--purple); } .gchip.changes { color: var(--orange); } .gchip.ready { color: var(--green); } .gchip.watching { color: var(--blue); }
+.group-body { display: grid; gap: 10px; }
+.group.collapsed .group-body { display: none; }
+.group-empty { padding: 12px; border: 1px dashed var(--border); border-radius: 10px; text-align: center; }
+.group-body:has(.card) .group-empty { display: none; }
+.drag-handle, .group-grip { background: none; border: 0; color: var(--muted); cursor: grab; padding: 0 4px; font-size: 16px; line-height: 1; border-radius: 6px; }
+.drag-handle:hover, .group-grip:hover { color: var(--text); } .drag-handle:focus-visible, .group-grip:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.card.dragging, .group.dragging { opacity: .45; }
+.card.drop-before { box-shadow: 0 -3px 0 0 var(--blue); } .card.drop-after { box-shadow: 0 3px 0 0 var(--blue); }
+.group.drop-before { box-shadow: 0 -5px 0 0 var(--blue); } .group.drop-after { box-shadow: 0 5px 0 0 var(--blue); }
+.group.drop-into > .group-body { outline: 2px dashed var(--blue); outline-offset: 4px; border-radius: 10px; min-height: 28px; }
+#pr-group { max-width: 205px; }

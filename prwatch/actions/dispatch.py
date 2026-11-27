@@ -20,6 +20,7 @@ ACTIONS = {
     'wake': (pwpr.wake, ('repo', 'pr')),
     'answer-question': (pwpr.answer_question, ('repo', 'pr', 'id', 'choice', 'note')),
     'unwatch': (pwpr.unwatch, ('repo', 'pr')),
+    'layout': (pwpr.set_layout, ('order', 'groups', 'names')),
     'open-session': (pwsessions.open_session, ('repo', 'pr')),
     'open-terminal': (pwsessions.open_terminal, ('repo', 'pr')),
     'open-in': (pwsessions.open_in, ('repo', 'pr', 'app')),
@@ -75,7 +76,7 @@ def perform(request):
     function, fields = ACTIONS[name]
     arguments = {}
     for field in fields:
-        if field in ('strategy', 'closeSourceBranch', 'paused', 'note', 'impacts', 'merge') and field not in request:
+        if field in ('strategy', 'closeSourceBranch', 'paused', 'note', 'impacts', 'merge', 'names') and field not in request:
             continue
         if field not in request:
             return pwcommon._result(False, f'Champ manquant : {field}')

@@ -15,6 +15,7 @@ REGISTRY = DIR / 'registry.json'
 
 
 REGISTRY_LOCK = DIR / 'registry.lock'
+GROUPS = DIR / 'groups.json'  # the names of the groups the user made, in their order (a group may be empty)
 
 
 DAEMON_LOCK = DIR / 'daemon.lock'
@@ -219,6 +220,21 @@ def save_registry(entries):
     tmp = REGISTRY.with_suffix('.tmp')
     tmp.write_text(json.dumps(entries, indent=2), encoding='utf-8')
     tmp.replace(REGISTRY)
+
+
+def load_groups():
+    try:
+        names = json.loads(GROUPS.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return []
+    return [n for n in names if isinstance(n, str)] if isinstance(names, list) else []
+
+
+def save_groups(names):
+    DIR.mkdir(parents=True, exist_ok=True)
+    tmp = GROUPS.with_suffix('.tmp')
+    tmp.write_text(json.dumps(names, ensure_ascii=False, indent=2), encoding='utf-8')
+    tmp.replace(GROUPS)
 
 
 def key_of(entry):

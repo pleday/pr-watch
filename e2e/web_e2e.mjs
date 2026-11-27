@@ -533,6 +533,139 @@ check('a non-object body is refused with 400', (await post({ 'X-Token': info.tok
 check('the server still answers after refused requests on the same connection', JSON.parse((await post({ 'X-Token': info.token }, { action: 'nope' })).body).message === 'Action inconnue.');
 check('config.json untouched by refused options', config().pollSeconds === 120 && !('claudeBinary' in config()));
 
+console.log('== arranging the list: groups and order');
+const until = async (test, ms = 8000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (test()) return true; await sleep(150); } return false; };
+const keysNow = () => registry().map((e) => `${e.pr}`).join(',');
+const originalOrder = registry().map((e) => `${e.repo}#${e.pr}`);
+const storedGroups = () => { try { return JSON.parse(fs.readFileSync(`${info.home}/groups.json`, 'utf8')); } catch { return []; } };
+const groupNames = () => page.locator('#prs .group[data-group]:not([data-group=""]) .group-name').allTextContents();
+await page.locator('#tabs button[data-tab="prs"]').click();
+check('without groups the list is flat: no section head, but a grip on every card', (await page.locator('#prs .group-head').count()) === 0 && (await page.locator('#prs .drag-handle').count()) === (await page.locator('#prs .card').count()));
+check('a "new group" button is in the bar', await page.locator('#pr-new-group').isVisible());
+check('the menu offers no grouping, custom grouping, by ticket and by repository', JSON.stringify(await page.locator('#pr-group option').allTextContents()) === JSON.stringify(['Aucun groupement', 'Groupement personnalisé', 'Par ticket', 'Par dépôt']));
+check('every button of the bar stays on one line, the new group button included', await page.evaluate(() => { const tops = [...document.querySelectorAll('.prs-bar > *')].filter((e) => e.getBoundingClientRect().width > 0 && e.getBoundingClientRect().height > 0).map((e) => e.getBoundingClientRect().top); return Math.max(...tops) - Math.min(...tops) < 12; }));
+await page.setViewportSize({ width: 1200, height: 1500 });  // the groups take room: everything must be on screen for the drags
+await page.click('#collapse-all');
+// 1. a group made with a name of the user's choice, empty at first
+await page.click('#pr-new-group');
+await page.locator('dialog[open] input[type=text]').fill('Lot A');
+await page.keyboard.press('Enter');
+await page.waitForSelector('.group[data-group="Lot A"]');
+check('a group is created with the name given, and kept by the server even though it is empty', await until(() => JSON.stringify(storedGroups()) === '["Lot A"]') && (await page.locator('.group[data-group="Lot A"] .group-empty').isVisible()));
+check('an empty group is neutral and says so in its head', (await page.locator('.group[data-group="Lot A"] .group-state.neutral').count()) === 1 && (await page.locator('.group[data-group="Lot A"] .group-state').getAttribute('aria-label')) === 'Groupe vide');
+await page.click('#pr-new-group');
+await page.locator('dialog[open] input[type=text]').fill('lot a');
+await page.locator('dialog[open] button', { hasText: /^Appliquer$/ }).click();
+await page.waitForTimeout(300);
+check('a name that already exists (whatever its case) is refused', JSON.stringify(storedGroups()) === '["Lot A"]');
+await page.click('#pr-new-group');
+await page.locator('dialog[open] input[type=text]').fill('Vide');
+await page.locator('dialog[open] button', { hasText: /^Appliquer$/ }).click();
+await page.waitForSelector('.group[data-group="Vide"]');
+// 2. putting PRs in: by the dialog of the card, and by dragging
+const groupIt = async (pr, choose) => {
+  const card = page.locator(`.card[data-key="fake-repo#${pr}"]`);
+  await card.locator('.toggle').click();
+  await card.getByRole('button', { name: /^Group/ }).click();
+  await page.locator('dialog[open] select').selectOption(choose);
+  await page.locator('dialog[open] button', { hasText: /^Appliquer$/ }).click();
+  await page.waitForFunction(([p, g]) => document.querySelector(`.card[data-key="fake-repo#${p}"]`)?.closest('.group')?.dataset.group === g, [pr, choose]);
+  await page.locator(`.card[data-key="fake-repo#${pr}"] .toggle`).click();  // folded again: the cards must all fit on screen for a drag
+};
+patchEntry(3, { needsAttention: 'à voir' });
+await groupIt(2, 'Lot A');
+await groupIt(3, 'Lot A');
+await page.waitForSelector('.group[data-group="Lot A"] .group-state.red', { timeout: 15000 }).catch(() => {});
+check('the group is saved by the server, in the registry', await until(() => entryOf(2).group === 'Lot A' && entryOf(3).group === 'Lot A'));
+check('the head tells the name and the number of PRs', (await page.locator('.group[data-group="Lot A"] .group-name').innerText()) === 'Lot A' && (await page.locator('.group[data-group="Lot A"] .group-count').innerText()) === '2 PR');
+check('the head counts the PRs by state', (await page.locator('.group[data-group="Lot A"] .gchip').allInnerTexts()).join('|').replace(/\s+/g, ' ').includes('1 à voir'));
+check('one PR asks for attention: the icon of the group is red', (await page.locator('.group[data-group="Lot A"] .group-state.red svg').count()) === 1 && (await page.locator('.group[data-group="Lot A"] .group-head.red').count()) === 1);
+const colorOf = (selector) => page.locator(selector).evaluate((n) => getComputedStyle(n).color);
+const redVar = await page.evaluate(() => { const probe = document.createElement('i'); probe.style.color = 'var(--red)'; document.body.append(probe); const c = getComputedStyle(probe).color; probe.remove(); return c; });
+check('and it is the red of the options', (await colorOf('.group[data-group="Lot A"] .group-state')) === redVar);
+check('the PRs of no group have no colour of their own, whatever they are', (await page.locator('#prs .group[data-group=""] .group-head.neutral').count()) === 1);
+check('the PRs of no group are listed first, under their own head', (await page.locator('#prs .group').first().getAttribute('data-group')) === '');
+// 3. the order of the groups
+await page.locator('.group[data-group="Vide"] .group-grip').focus();
+await page.keyboard.press('ArrowUp');
+await page.waitForFunction(() => JSON.stringify([...document.querySelectorAll('#prs .group[data-group]:not([data-group=""])')].map((g) => g.dataset.group)) === '["Vide","Lot A"]');
+await page.waitForTimeout(500);
+check('the arrows on the grip of a group move it, and the order is kept by the server', await until(() => JSON.stringify(storedGroups()) === '["Vide","Lot A"]'));
+check('the focus stays on the grip of the group that moved', await page.evaluate(() => document.activeElement?.classList.contains('group-grip')));
+await page.locator('.group[data-group="Vide"] .group-grip').dragTo(page.locator('.group[data-group="Lot A"] .group-head'), { targetPosition: { x: 300, y: 25 } });
+await page.waitForFunction(() => JSON.stringify([...document.querySelectorAll('#prs .group[data-group]:not([data-group=""])')].map((g) => g.dataset.group)) === '["Lot A","Vide"]', null, { timeout: 8000 }).catch(() => {});
+check('a group is dragged under another one', await until(() => JSON.stringify(storedGroups()) === '["Lot A","Vide"]'));
+// 4. the order of the PRs
+const first = () => page.locator('.group[data-group="Lot A"] .card').first().getAttribute('data-key');
+const before = await first();
+await page.locator('.group[data-group="Lot A"] .card').first().locator('.drag-handle').focus();
+await page.keyboard.press('ArrowDown');
+await page.waitForFunction((k) => document.querySelector('.group[data-group="Lot A"] .card')?.dataset.key !== k, before);
+const afterMove = await first();
+check('the arrow keys on the grip of a card move it, and the order is kept by the server', afterMove !== before && registry().findIndex((e) => `fake-repo#${e.pr}` === before) > registry().findIndex((e) => `fake-repo#${e.pr}` === afterMove));
+await page.waitForFunction(() => document.activeElement?.classList.contains('drag-handle'), null, { timeout: 5000 }).catch(() => {});
+check('the keyboard focus stays on the grip of the card that moved', await page.evaluate(() => document.activeElement?.classList.contains('drag-handle')));
+// 5. dragging a card into the empty group, and the colour of the group follows its worst PR
+await page.locator('.card[data-key="fake-repo#2"] .drag-handle').dragTo(page.locator('.group[data-group="Vide"] .group-empty'));
+await page.waitForFunction(() => document.querySelector('.card[data-key="fake-repo#2"]')?.closest('.group')?.dataset.group === 'Vide', null, { timeout: 8000 }).catch(() => {});
+check('a card is dragged into an empty group', await until(() => entryOf(2).group === 'Vide'));
+await page.waitForSelector('.group[data-group="Vide"] .group-state.green', { timeout: 15000 }).catch(() => {});
+check('a group whose PRs are all fine is green', (await page.locator('.group[data-group="Vide"] .group-state.green svg').count()) === 1);
+patchEntry(2, { ready: false, mergeBlockers: [], changesRequestedBy: ['Alice'] });
+await page.waitForSelector('.group[data-group="Vide"] .group-state.orange', { timeout: 15000 }).catch(() => {});
+check('with changes requested on one of its PRs it is orange', (await page.locator('.group[data-group="Vide"] .group-state.orange svg').count()) === 1);
+patchEntry(2, { changesRequestedBy: [], mergeBlockers: ['pipeline #5 en échec'] });
+await page.waitForSelector('.group[data-group="Vide"] .group-state.red', { timeout: 15000 }).catch(() => {});
+check('and red with a failed pipeline', (await page.locator('.group[data-group="Vide"] .group-state.red svg').count()) === 1);
+patchEntry(2, { mergeBlockers: [], ready: true });
+// 5b. no grouping: a flat list that leaves the groups alone
+await page.selectOption('#pr-group', 'none');
+await page.waitForFunction(() => !document.querySelector('#prs .group-head'));
+check('with no grouping the list is flat and the new group button is gone', (await page.locator('#prs .group-head').count()) === 0 && !(await page.locator('#pr-new-group').isVisible()) && (await page.locator('#prs .card').count()) === originalOrder.length - 0);
+const groupedBefore = JSON.stringify(registry().map((e) => [e.pr, e.group]));
+await page.locator('#prs .card').first().locator('.drag-handle').focus();
+await page.keyboard.press('ArrowDown');
+await sleep(800);
+check('reordering a flat list keeps the groups of the PRs and the list of groups', JSON.stringify(registry().map((e) => [e.pr, e.group]).sort((a, b) => a[0] - b[0])) === JSON.stringify(JSON.parse(groupedBefore).sort((a, b) => a[0] - b[0])) && storedGroups().length === 2);
+await page.selectOption('#pr-group', 'manual');
+await page.waitForSelector('.group[data-group="Lot A"]');
+// 6. folding, filter, computed groups, rename, delete
+await page.locator('.group[data-group="Lot A"] .group-head .toggle').click();
+check('a group folds', (await page.locator('.group[data-group="Lot A"] .card:visible').count()) === 0);
+await page.reload();
+await page.waitForSelector('.group[data-group="Lot A"]');
+check('and stays folded after a reload', (await page.locator('.group[data-group="Lot A"] .card:visible').count()) === 0);
+await page.fill('#pr-filter', 'zzz-nothing');
+check('a filter that matches nothing hides the group heads too', (await page.locator('#prs .group:visible').count()) === 0);
+await page.fill('#pr-filter', '');
+patchEntry(3, { needsAttention: 'à voir' });
+await page.selectOption('#pr-group', 'repo');
+await page.waitForFunction(() => !document.querySelector('#prs .drag-handle') && document.querySelector('#prs .group-head.red, #prs .group-head.green, #prs .group-head.orange'));
+check('by repository, the list is grouped by computed sections without editing tools', (await page.locator('#prs .group-head .group-name').allTextContents()).includes('fake-repo') && (await page.locator('#prs .drag-handle, #prs .group-grip').count()) === 0 && (await page.locator('.group-head .btn.mini').count()) === 0 && !(await page.locator('#pr-new-group').isVisible()));
+await page.waitForSelector('#prs .group-head.red', { timeout: 15000 }).catch(() => {});
+check('a computed group has the colour of its worst PR too', (await page.locator('#prs .group-head.red').count()) === 1);
+patchEntry(3, { needsAttention: '' });
+await page.selectOption('#pr-group', 'manual');
+await page.waitForSelector('.group[data-group="Lot A"]');
+await page.locator('.group[data-group="Lot A"] .group-head .toggle').click();
+await page.locator('.group[data-group="Lot A"] .group-head button[aria-label="Renommer le groupe"]').click();
+await page.locator('dialog[open] input[type=text]').fill('Lot Z');
+await page.locator('dialog[open] button', { hasText: /^Appliquer$/ }).click();
+await page.waitForSelector('.group[data-group="Lot Z"]');
+check('a group is renamed for all its PRs, in the list too', await until(() => registry().filter((e) => e.group === 'Lot Z').length === 1 && !registry().some((e) => e.group === 'Lot A') && JSON.stringify(storedGroups()) === '["Lot Z","Vide"]'), JSON.stringify(storedGroups()));
+for (const name of ['Lot Z', 'Vide']) {
+  await page.locator(`.group[data-group="${name}"] .group-head button[aria-label="Supprimer le groupe"]`).click();
+  await page.locator('dialog[open] button', { hasText: /^Supprimer$/ }).click();
+  await page.waitForFunction((n) => !document.querySelector(`.group[data-group="${n}"]`), name);
+}
+check('dissolving the groups puts their PRs back in the list, and the list is flat again', !registry().some((e) => e.group) && storedGroups().length === 0 && (await page.locator('#prs .group-head').count()) === 0);
+await page.evaluate(() => localStorage.removeItem('pw-groups-collapsed'));
+await page.setViewportSize({ width: 1200, height: 900 });
+const restore = await post({ 'X-Token': info.token }, { action: 'layout', order: originalOrder, groups: {}, names: [] });
+check('the original order is restored for the rest of the test', JSON.parse(restore.body).ok === true && keysNow() === originalOrder.map((k) => k.split('#')[1]).join(','));
+await page.reload();
+await page.waitForSelector('.card');
+
 console.log('== audit: tabs, keyboard and accessibility');
 await page.locator('#tabs button[data-tab="prs"]').click();
 check('the tabs have the tab role and exactly one is selected', (await page.locator('#tabs [role=tab]').count()) === 3 && (await page.locator('#tabs [aria-selected="true"]').count()) === 1);

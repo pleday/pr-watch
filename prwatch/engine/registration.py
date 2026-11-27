@@ -42,6 +42,9 @@ def register_pr(repo, pr, branch, work_dir, session, session_cwd, since_pipeline
         current = pwstore.load_registry()
         if unique and any(pwstore.key_of(e) == pwstore.key_of(entry) and e.get('state') != 'done' for e in current):
             raise AlreadyWatched(pwstore.key_of(entry))
+        previous = next((e for e in current if pwstore.key_of(e) == pwstore.key_of(entry)), None)
+        if previous and previous.get('group'):
+            entry['group'] = previous['group']  # registering again points the PR elsewhere; it stays in its group
         entries = [e for e in current if pwstore.key_of(e) != pwstore.key_of(entry)]
         pwstore.save_registry(entries + [entry])
     return entry

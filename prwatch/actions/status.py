@@ -183,7 +183,7 @@ def overview():
         entries.append(
             {
                 **{key: entry.get(key) for key in (
-                    'repo', 'pr', 'title', 'branch', 'state', 'attempts', 'lastPipeline', 'ready', 'mergeBlockers', 'changesRequestedBy',
+                    'repo', 'pr', 'title', 'branch', 'state', 'attempts', 'lastPipeline', 'ready', 'mergeBlockers', 'changesRequestedBy', 'group',
                     'needsAttention', 'lastReportAt', 'sessionId', 'sessionCwd', 'workDir', 'forceWake', 'doneReason', 'pendingQuestions',
                     'mergeDefault', 'mergeAllowed', 'activity', 'autoMergeNote',
                 )},
@@ -218,6 +218,7 @@ def overview():
         'schedule': {**pwconfig.schedule_of(cfg), **dict(zip(('working', 'resumes', 'override'), pwconfig.schedule_effective_state(cfg)))},
         'usage': dict(zip(('quotas', 'at'), pwusage.read())) if cfg['usageGuard'] else None,
         'entries': entries,
+        'groups': pwstore.load_groups(),
         'options': {**{key: cfg[key] for key in pwoptions.OPTIONS}, 'schedule': pwconfig.schedule_of(cfg), 'ticketTransitions': cfg['ticketTransitions'], 'autoMergeChoices': [{'id': m, 'label': l} for m, l in pwconfig.AUTO_MERGE_MODES], 'handling': cfg['handling'], 'quickActions': cfg['quickActions']},
         'quickActionChoices': [{'id': k, 'label': label} for k, label in QUICK_ACTIONS], 'maxQuickActions': MAX_QUICK_ACTIONS,
         'handlingForm': pwforms.handling_form(cfg, pwconfig.CATEGORIES),

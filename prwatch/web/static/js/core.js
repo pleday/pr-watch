@@ -39,6 +39,7 @@ export const ICONS = {
   expand: 'M7 7l5 5 5-5M7 13l5 5 5-5',
   collapse: 'M7 11l5-5 5 5M7 17l5-5 5 5',
   attention: 'M12 3l10 18H2zM12 10v5M12 18h0',
+  group: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
   archive: 'M3 4h18v4H3zM5 8v12h14V8M10 12h4',
   failed: 'M8 3h8l5 5v8l-5 5H8l-5-5V8zM9 9l6 6M15 9l-6 6',
   changes: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 9h8M8 12h8M8 15h5',
