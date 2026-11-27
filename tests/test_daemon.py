@@ -621,6 +621,18 @@ class ReadinessTest(unittest.TestCase):
         self.assertIn('aucun pipeline sur le dernier commit', self.blockers(runs=()))
         self.assertIn('pipeline #1 en cours', self.blockers(runs=((1, 'IN_PROGRESS', None, '**'),)))
 
+    def test_the_reviewers_who_requested_changes_are_named_and_kept_even_when_the_pipelines_cannot_be_read(self):
+        pr = {'participants': [{'state': 'changes_requested', 'user': {'display_name': 'Alice'}}, {'state': 'approved', 'user': {'display_name': 'Bob'}},
+                               {'state': 'changes_requested', 'user': {}}], 'task_count': 0, 'source': {'commit': {'hash': self.HEAD}}, 'destination': {'branch': {'name': 'develop'}}}
+        self.assertEqual(pwmerging.changes_requesters(pr), ['Alice', '?'])
+        set_registry([entry(1)])
+        reset_config()
+        with mock.patch.object(pwbitbucket, 'api', return_value=None):  # the pipelines do not answer
+            pwmerging.sync_ready(registry()[0], pr, pwconfig.config(), False)
+            self.assertEqual(registry()[0]['changesRequestedBy'], ['Alice', '?'])
+            pwmerging.sync_ready(registry()[0], {**pr, 'participants': []}, pwconfig.config(), False)
+        self.assertEqual(registry()[0]['changesRequestedBy'], [])
+
     def test_a_failed_run_that_was_restarted_successfully_no_longer_blocks(self):
         self.assertEqual(self.blockers(runs=((1, 'COMPLETED', 'FAILED', '**'), (2, 'COMPLETED', 'SUCCESSFUL', '**'))), [])
         self.assertEqual(self.blockers(runs=((2, 'COMPLETED', 'FAILED', '**'), (1, 'COMPLETED', 'SUCCESSFUL', '**'))), ['pipeline #2 en échec'])

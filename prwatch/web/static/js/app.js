@@ -4,6 +4,7 @@ import { S, act, ask, askServer, call, confirmDialog, h, icon, toast, token } fr
 import { addPrDialog, usageDialog, usageLevel } from './dialogs.js';
 import { refreshLog, renderLogPrs, selectTab } from './journal.js';
 import { applyPermissions, checkPermissions, checkPlugins, permissionsDialog, renderOptions } from './options.js';
+import { applyColors } from './colors.js';
 import { applyStaticTranslations, formatDateTime, language, locale, t } from './i18n.js';
 
 /** A battery filled to `percent`, in the colour of its `level`. */
@@ -246,9 +247,17 @@ function renderToolbarLabels() {
     const node = document.getElementById(id);
     node.replaceChildren(icon(name), t(key));
   }
+  // buttons of the journal: an icon, the name only as tooltip and for screen readers (they would not fit on the line of the filters)
+  for (const [id, name, key] of [['log-refresh', 'reset', 'common.refresh'], ['log-archive', 'archive', 'log.archive']]) {
+    const node = document.getElementById(id);
+    node.replaceChildren(icon(name));
+    node.setAttribute('title', t(key));
+    node.setAttribute('aria-label', t(key));
+  }
 }
 
 renderToolbarLabels();
+applyColors();
 applyStaticTranslations();
 
 refreshState(true);

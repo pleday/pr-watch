@@ -39,6 +39,9 @@ export const ICONS = {
   expand: 'M7 7l5 5 5-5M7 13l5 5 5-5',
   collapse: 'M7 11l5-5 5 5M7 17l5-5 5 5',
   attention: 'M12 3l10 18H2zM12 10v5M12 18h0',
+  archive: 'M3 4h18v4H3zM5 8v12h14V8M10 12h4',
+  failed: 'M8 3h8l5 5v8l-5 5H8l-5-5V8zM9 9l6 6M15 9l-6 6',
+  changes: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 9h8M8 12h8M8 15h5',
   ready: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 12l3 3 5-6',
   'gave-up': 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9 9l6 6M15 9l-6 6',
   paused: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM10 9v6M14 9v6',
@@ -165,7 +168,12 @@ export function ask({ title, body, buttons }) {
     dialog.replaceChildren(
       h('h2', {}, title),
       h('div', { class: 'body' }, bodyNode),
-      h('div', { class: 'buttons' }, buttons.map((b) => h('button', { class: `btn ${b.kind || ''}`, type: 'button', onclick: () => { dialog.close(); resolve({ value: b.value, collect }); } }, b.label))),
+      h('div', { class: 'buttons' }, buttons.map((b) => {
+        // `keepOpen` buttons run their own `onclick` and leave the dialog open; `ref` hands the node to the body through `collect`
+        const node = h('button', { class: `btn ${b.kind || ''}`, type: 'button', disabled: b.disabled, title: b.title, onclick: b.keepOpen ? b.onclick : () => { dialog.close(); resolve({ value: b.value, collect }); } }, b.icon ? icon(b.icon) : null, b.label);
+        if (b.ref) collect[b.ref] = node;
+        return node;
+      })),
     );
     dialog.addEventListener('close', () => resolve({ value: null, collect }), { once: true });
     dialog.showModal();

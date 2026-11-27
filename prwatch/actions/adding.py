@@ -5,6 +5,7 @@ import re
 
 from prwatch.core import bitbucket as pwbitbucket
 from prwatch.actions import common as pwcommon
+from prwatch.actions import status as pwstatus
 from prwatch.core import config as pwconfig
 
 from prwatch.integrations import jira as pwjira
@@ -77,6 +78,14 @@ def sessions_of(work_dir):
     return found[:20]
 
 
+def already_watched(repo, pr):
+    """The refusal to give when the pull request is on the list and still followed (a finished one may be added again), else None."""
+    for entry in pwstore.load_registry():
+        if entry['repo'] == repo and entry['pr'] == pr and entry.get('state') != 'done':
+            return pwcommon._result(False, f"{repo}#{pr} est déjà dans la liste ({pwstatus.STATE_LABELS.get(entry.get('state') or 'watching', 'surveillée').lower()}) : rien à ajouter.", watched=True)
+    return None
+
+
 def pr_lookup(reference):
     """What the "add a pull request" form needs once the user names a PR: its title and branch, a guess of the local clone, its sessions."""
     if (refused := pwcommon._hidden('add-pr')):
@@ -87,6 +96,8 @@ def pr_lookup(reference):
     if not parsed:
         return pwcommon._result(False, 'Indiquez l’adresse de la PR, ou « dépôt#numéro ».')
     repo, number = parsed
+    if (refused := already_watched(repo, number)):
+        return refused
     pr = pwbitbucket.api(f"/repositories/{pwbitbucket.workspace()}/{repo}/pullrequests/{number}")
     if not pr:
         return pwcommon._result(False, f'PR introuvable : {repo}#{number} (dépôt, numéro ou droits du jeton ?).')
@@ -115,6 +126,8 @@ def add_pr(repo, pr, workDir, sessionId):
         return pwcommon._result(False, 'Dépôt ou numéro invalide.')
     if pwconfig.missing_setup(pwconfig.config()):
         return pwcommon._result(False, 'Renseignez d’abord l’espace Bitbucket (Options › Équipe).')
+    if (refused := already_watched(repo, pr)):  # before a new session is started for nothing
+        return refused
     new = sessionId == NEW_SESSION
     if not isinstance(workDir, str) or not isinstance(sessionId, str) or not (new or re.fullmatch(r'[0-9a-fA-F-]{36}', sessionId)):
         return pwcommon._result(False, 'Dossier ou session invalide.')
@@ -141,6 +154,9 @@ def add_pr(repo, pr, workDir, sessionId):
         if failure:
             return pwcommon._result(False, failure)
     running = pwprocesses.find_session_process(sessionId)
-    entry = pwregistration.register_pr(repo, pr, found['source']['branch']['name'], work_dir, sessionId, session_cwd, title=found['title'],
-                            origin={'host': running['host'], 'entrypoint': running['entrypoint']} if running and running['host'] else None)
+    try:
+        entry = pwregistration.register_pr(repo, pr, found['source']['branch']['name'], work_dir, sessionId, session_cwd, title=found['title'], unique=True,
+                                           origin={'host': running['host'], 'entrypoint': running['entrypoint']} if running and running['host'] else None)
+    except pwregistration.AlreadyWatched:  # added by someone else between the check and now
+        return already_watched(repo, pr)
     return pwcommon._result(True, f"{pwstore.key_of(entry)} ajoutée à la surveillance.")

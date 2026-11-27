@@ -53,10 +53,12 @@
       <div class="toolbar">
         <select id="log-mode" aria-label="Filtre" data-i18n-attr='{"aria-label":"log.filter"}'></select>
         <select id="log-pr" aria-label="Pull request"><option value="" data-i18n="log.all">Toutes les PR</option></select>
+        <select id="log-period" aria-label="Période" data-i18n-attr='{"aria-label":"log.period"}'></select>
+        <details id="log-kinds" class="kinds"><summary data-i18n="log.kinds">Types de lignes</summary><div id="log-kinds-list" class="kinds-list" role="group" aria-label="Types de lignes" data-i18n-attr='{"aria-label":"log.kinds"}'></div></details>
         <input id="log-search" type="search" placeholder="Rechercher dans le journal" aria-label="Rechercher" data-i18n-attr='{"placeholder":"log.search","aria-label":"log.search"}'>
         <label class="check"><input id="log-follow" type="checkbox" checked> <span data-i18n="log.follow">Suivre</span></label>
-        <button id="log-refresh" class="btn" data-i18n="common.refresh">Actualiser</button>
-        <button id="log-archive" class="btn" type="button" data-i18n="log.archive">Archiver</button>
+        <button id="log-refresh" class="btn icon-only" type="button"></button>
+        <button id="log-archive" class="btn icon-only" type="button"></button>
       </div>
       <div id="log-banner" class="banner notice warning" role="status" hidden></div>
       <div id="log" class="log"></div>

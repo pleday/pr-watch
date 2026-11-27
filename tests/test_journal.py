@@ -99,3 +99,51 @@ class PagingTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+ACTIVITY = """2026-11-26 10:00:00 my-repo#7: resuming session abc for 1 event(s)
+- comment: Pourquoi ce choix ?
+2026-11-26 10:03:00 my-repo#7: claude committed 0123456789: fix(web): handle the case
+Body of the commit.
+2026-11-26 10:03:05 my-repo#7: claude replied on comment 42: Corrigé.
+2026-11-26 10:03:06 my-repo#7: claude resolved the thread of comment 42
+2026-11-26 10:03:07 my-repo#7: claude exited 0
+Fait.
+2026-11-26 10:03:08 my-repo#7: session in use, 1 event(s) kept for later
+"""
+
+
+class ActivityTest(unittest.TestCase):
+    def setUp(self):
+        self.entries = journal.parse(ACTIVITY)
+
+    def test_what_claude_did_has_its_own_kinds(self):
+        self.assertEqual([e['kind'] for e in self.entries], ['claude', 'commit', 'reply', 'reply', 'ok', 'muted'])
+        self.assertEqual(self.entries[0]['details'], ['- comment: Pourquoi ce choix ?'])
+        self.assertEqual(self.entries[1]['details'], ['Body of the commit.'])
+
+    def test_links_lead_to_the_pull_request_the_commit_and_the_comment(self):
+        urls = [link['url'] for link in journal.links(self.entries[1], 'acme')]
+        self.assertEqual(urls, ['https://bitbucket.org/acme/my-repo/pull-requests/7', 'https://bitbucket.org/acme/my-repo/commits/0123456789'])
+        reply = journal.links(self.entries[2], 'acme')
+        self.assertEqual(reply[1]['url'], 'https://bitbucket.org/acme/my-repo/pull-requests/7#comment-42')
+        self.assertEqual(journal.links(self.entries[1], ''), [])
+        self.assertEqual(journal.links(journal.parse('2026-11-26 10:00:00 daemon started')[0], 'acme'), [])
+
+    def test_the_kinds_filter_keeps_the_ticked_groups_only(self):
+        shown = lambda kinds: [e['kind'] for e in self.entries if journal.visible(e, kinds=kinds)]
+        self.assertEqual(shown(['commit']), ['commit'])
+        self.assertEqual(shown(['reply', 'claude']), ['claude', 'reply', 'reply', 'ok'])
+        self.assertEqual(shown(['none']), [])
+        self.assertEqual(len(shown(None)), 6)
+
+    def test_the_period_filter(self):
+        import datetime
+        now = datetime.datetime(2026, 11, 26, 10, 30)
+        self.assertEqual(journal.cutoff('', now), '')
+        self.assertEqual(journal.cutoff('1', now), '2026-11-26 09:30:00')
+        self.assertEqual(journal.cutoff('today', now), '2026-11-26 00:00:00')
+        self.assertEqual(len([e for e in self.entries if journal.visible(e, since='2026-11-26 10:03:06')]), 3)
+
+    def test_claude_mode_includes_what_claude_did(self):
+        self.assertEqual([e['kind'] for e in self.entries if journal.visible(e, 'claude')], ['claude', 'commit', 'reply', 'reply', 'ok'])

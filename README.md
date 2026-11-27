@@ -203,6 +203,10 @@ notifié (urgent), la carte de la PR passe en **❓ Décision attendue** et mont
 côté ; *Autre* : Claude suit la consigne que vous écrivez. Le mode `fix` du type `question` rétablit le traitement
 direct, pour une PR ou globalement.
 
+Les questions ne s'affichent que carte dépliée (la pastille « Décision attendue » reste visible). Un ✕ sur chaque question, et
+« Tout ignorer » quand il y en a plusieurs, les écartent sans réveiller Claude. Une question disparaît aussi toute seule quand
+son fil est résolu ou son commentaire supprimé sur Bitbucket.
+
 ### Le protocole avec Claude
 
 Le message de réveil explique l'événement et demande de corriger seul. La **dernière ligne** de la réponse est lue par le
@@ -256,6 +260,16 @@ Une seule fenêtre, la même sur tous les systèmes : le tableau de bord web. Le
 - **État de chaque PR** : une icône avant son nom (⚠ attention, ✔ prête à merger, ✖ essais épuisés, ⏸ pause, ■ terminée,
   👁 surveillée) dont le tooltip donne la raison. Un ⬆ s'y ajoute quand des commits de la branche locale n'ont pas été
   poussés (le bouton *Pousser* les envoie) ; l'état est lu dans `origin/<branche>`, sans réseau.
+- **États des cartes et couleurs** : une carte est encadrée selon son état : vert (prête à merger), orange (un relecteur a demandé des
+  modifications), rouge (pipeline en échec, ou votre attention est nécessaire). Chaque état a aussi son icône et sa pastille.
+  *Options › Affichage des cartes* regroupe les actions affichées et les couleurs : palette par défaut, daltonisme (bleu, orange, rose),
+  contraste élevé ou trois couleurs personnalisées, et une case pour ajouter un style de cadre (pointillé, double) afin de ne pas
+  dépendre de la couleur seule. Le choix est retenu par le navigateur ; l'icône de barre garde ses couleurs.
+- **Journal** : il dit aussi ce que Claude a fait à chaque réveil : les événements qui l'ont déclenché, chaque commit (message,
+  description et lien vers Bitbucket), chaque réponse postée et chaque fil résolu (lien vers le commentaire) ; le numéro de la PR
+  renvoie à la PR. Aux filtres existants (type, PR, recherche) s'ajoutent *Période* (dernière heure, aujourd'hui, 24 h, 7 jours) et
+  *Types de lignes* (réveils, commits, réponses, notifications, erreurs, merges, système, autres), retenus d'une visite à l'autre.
+- **Ajout d'une PR** : la fenêtre refuse une PR déjà dans la liste (le serveur aussi) ; une PR terminée peut être rajoutée.
 - **Notifications** : titre, puis dépôt / numéro / titre de la PR, puis détail. Sous Linux (`notify-send` 0.8+), cliquer
   dessus ouvre le tableau de bord sur la PR (`pr-watch ui --select REPO#N`). Double-cliquer une carte ouvre le journal de la PR, et le bouton *Dernier rapport* l'ouvre sur son dernier rapport de Claude ;
   le journal montre les 200 dernières entrées et « Entrées plus anciennes » remonte plus loin. « Archiver » vide le journal et le range dans `journal-archives/` (10 archives conservées).
@@ -338,6 +352,7 @@ prwatch/
     cycle.py          un tour sur chaque PR : que s'est-il passé, que faire
     events.py         détection : pipelines, commentaires, revue automatique, Sonar
     wake.py           réveil de la session Claude : message, exécution, verdict, vérification du rapport
+    runlog.py         journal de ce que Claude a fait pendant un réveil : commits, réponses, fils résolus
     merging.py        merge d'une PR, stratégies, PR prête à merger, retrait des PR terminées
     registration.py   ajout d'une PR à la liste
     service.py        les processus : boucle du démon, serveur du tableau de bord, icône de barre
@@ -593,6 +608,10 @@ notified (urgent), the PR card switches to **❓ Decision needed** and shows the
 aside; *Other*: Claude follows the instruction you write. The `fix` mode of the `question` type restores direct
 handling, for one PR or globally.
 
+The questions only show when the card is expanded (the "Decision needed" chip stays visible). A ✕ on each question, and
+"Dismiss all" when there are several, set them aside without waking Claude. A question also disappears by itself when its
+thread is resolved or its comment deleted on Bitbucket.
+
 ### The protocol with Claude
 
 The wake-up message explains the event and asks Claude to fix it on its own. The **last line** of the reply is read by the
@@ -646,6 +665,16 @@ A single window, the same on all systems: the web dashboard. The interface code 
 - **State of each PR**: an icon before its name (⚠ attention, ✔ ready to merge, ✖ attempts exhausted, ⏸ paused, ■ done,
   👁 watched) whose tooltip gives the reason. A ⬆ is added when commits of the local branch have not been
   pushed (the *Push* button sends them); the state is read from `origin/<branch>`, without network.
+- **Card states and colours**: a card is framed according to its state: green (ready to merge), orange (a reviewer requested
+  changes), red (failed pipeline, or your attention is needed). Each state also has its icon and chip. *Settings › Card display*
+  gathers the actions shown and the colours: default palette, colour blindness (blue, orange, pink), high contrast or three custom
+  colours, and a box to add a frame style (dashed, double) so as not to rely on colour alone. The choice is kept by the browser; the
+  tray icon keeps its colours.
+- **Activity log**: it also says what Claude did at each wake-up: the events that triggered it, each commit (message, description and
+  link to Bitbucket), each reply posted and each thread resolved (link to the comment); the PR number links to the PR. On top of the
+  existing filters (type, PR, search) come *Period* (last hour, today, 24 h, 7 days) and *Kinds of lines* (wake-ups, commits, replies,
+  notifications, errors, merges, system, other), remembered from one visit to the next.
+- **Adding a PR**: the window refuses a PR that is already on the list (the server too); a finished PR can be added again.
 - **Notifications**: title, then repository / number / title of the PR, then details. On Linux (`notify-send` 0.8+), clicking
   on one opens the dashboard on the PR (`pr-watch ui --select REPO#N`). Double-clicking a card opens the PR's log, and the *Latest report* button opens it on Claude's latest report;
   the log shows the last 200 entries and "Show older entries" goes further back. "Archive" empties the log and stores it in `journal-archives/` (10 archives kept).
@@ -728,6 +757,7 @@ prwatch/
     cycle.py          one pass over each PR: what happened, what to do
     events.py         detection: pipelines, comments, automated review, Sonar
     wake.py           waking the Claude session: message, execution, verdict, report verification
+    runlog.py         journal of what Claude did during a wake-up: commits, replies, resolved threads
     merging.py        merging a PR, strategies, PR ready to merge, removal of finished PRs
     registration.py   adding a PR to the list
     service.py        the processes: daemon loop, dashboard server, tray icon

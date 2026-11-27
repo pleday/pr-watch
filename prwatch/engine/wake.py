@@ -11,6 +11,7 @@ from pathlib import Path
 from prwatch.core import bitbucket as pwbitbucket
 from prwatch.core import config as pwconfig
 from prwatch.core import store as pwstore
+from prwatch.engine import runlog as pwrunlog
 from prwatch.integrations import usage as pwusage
 from prwatch.system import host as pwhost
 from prwatch.system import notifications as pwnotifications
@@ -149,7 +150,8 @@ def wake_claude(entry, pr, events, cfg, dry_run):
         return True, ''
     # stream-json so that the quotas the CLI reports after the answer are kept (the answer itself is read from its last line)
     command = [cfg['claudeBinary'], '--resume', entry['sessionId'], '-p', *cfg['claudeArgs'], '--output-format', 'stream-json', '--verbose']
-    pwstore.log(f"{pwstore.key_of(entry)}: resuming session {entry['sessionId']} for {len(events)} event(s)")
+    pwstore.log('\n'.join([f"{pwstore.key_of(entry)}: resuming session {entry['sessionId']} for {len(events)} event(s)", *pwrunlog.event_lines(events)]))
+    head_before, started = pwrunlog.head(entry), pwrunlog.utc_now()
     try:
         result = subprocess.run(
             command,
@@ -172,6 +174,7 @@ def wake_claude(entry, pr, events, cfg, dry_run):
         raise OutOfTokens(reason)
     tail = text.strip()
     pwstore.log(f"{pwstore.key_of(entry)}: claude exited {result.returncode}\n{tail}" + (f"\nstderr: {result.stderr.strip()[-500:]}" if result.returncode else ''))
+    pwrunlog.log_run(entry, cfg, head_before, started)
     return not failed, text
 
 

@@ -132,11 +132,19 @@ def merge_blockers(entry, pr, cfg):
     return blockers
 
 
+def changes_requesters(pr):
+    """The display names of the reviewers whose current verdict on the PR is "request changes"."""
+    return [(p.get('user') or {}).get('display_name') or '?' for p in pr.get('participants', []) if p.get('state') == 'changes_requested']
+
+
 def sync_ready(entry, pr, cfg, dry_run, announce=True):
     """Announces once that the PR can be merged, and forgets it when it can not any more (a new commit, a new comment).
 
     `announce` False records the state without the notification (the user asked for a refresh and is looking at the window).
     """
+    requesters = changes_requesters(pr)  # known from the PR itself: shown even when the pipelines cannot be read
+    if not dry_run and (entry.get('changesRequestedBy') or []) != requesters:
+        pwstore.update_entry(entry, changesRequestedBy=requesters)
     blockers = merge_blockers(entry, pr, cfg)
     if blockers is None:
         return  # Bitbucket did not answer: keep what is known rather than showing a false blocker

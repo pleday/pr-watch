@@ -81,7 +81,7 @@ def quick_actions(entry, st, cfg):
 STATE_LABELS = {'watching': 'Surveillée', 'paused': 'En pause', 'gave-up': 'Abandonnée (essais épuisés)', 'done': 'Terminée'}
 
 
-STATE_ICONS = {'ticket-wait': '⏳', 'question': '❓', 'attention': '⚠', 'ready': '✔', 'gave-up': '✖', 'paused': '⏸', 'done': '■', 'watching': '👁'}
+STATE_ICONS = {'ticket-wait': '⏳', 'question': '❓', 'attention': '⚠', 'failed': '⛔', 'changes': '✎', 'ready': '✔', 'gave-up': '✖', 'paused': '⏸', 'done': '■', 'watching': '👁'}
 
 
 PUSH_ICON = '⬆'
@@ -126,6 +126,12 @@ def status(entry, pending_push=None, cfg=None):
         watch = entry['ticketWatch']
         kind, label = 'ticket-wait', 'En attente de validation du ticket'
         tip = f"Mergée. Le ticket {watch['key']} est toujours « {watch['status']} » : changez son état (bouton « Ticket… ») pour que la PR quitte la liste."
+    elif state == 'watching' and (failed := [b for b in entry.get('mergeBlockers') or [] if b.endswith('en échec')]):
+        kind, label = 'failed', 'Pipeline en échec'
+        tip = f"{', '.join(b.capitalize() for b in failed)} : à corriger avant de pouvoir merger."
+    elif state == 'watching' and entry.get('changesRequestedBy'):
+        kind, label = 'changes', 'Modifications demandées'
+        tip = f"{', '.join(entry['changesRequestedBy'])} {'demande' if len(entry['changesRequestedBy']) == 1 else 'demandent'} des modifications : la PR ne peut pas être mergée avant."
     elif state == 'watching' and entry.get('ready'):
         kind, label, tip = 'ready', 'Prête à merger ✓', 'Prête à merger : approuvée, pipelines verts, aucune tâche ouverte.'
     else:
@@ -177,7 +183,7 @@ def overview():
         entries.append(
             {
                 **{key: entry.get(key) for key in (
-                    'repo', 'pr', 'title', 'branch', 'state', 'attempts', 'lastPipeline', 'ready', 'mergeBlockers',
+                    'repo', 'pr', 'title', 'branch', 'state', 'attempts', 'lastPipeline', 'ready', 'mergeBlockers', 'changesRequestedBy',
                     'needsAttention', 'lastReportAt', 'sessionId', 'sessionCwd', 'workDir', 'forceWake', 'doneReason', 'pendingQuestions',
                     'mergeDefault', 'mergeAllowed', 'activity', 'autoMergeNote',
                 )},
@@ -224,18 +230,21 @@ def overview():
     }
 
 
-def journal(mode='all', search='', pr='', limit=pwlog.PAGE):
+def journal(mode='all', search='', pr='', limit=pwlog.PAGE, kinds=None, period=''):
     """The journal entries to show, oldest first, repeated lines folded, reports split into drawable lines.
 
     Only the last `limit` entries are returned (0 = all); `older` counts those left out, so a front end can offer them.
+    `kinds` (ids of `pwlog.KIND_GROUPS`, None = all) and `period` (see `pwlog.PERIODS`) narrow it further.
     """
+    workspace = pwconfig.config().get('bitbucketWorkspace')
     text = pwstore.LOG.read_text(encoding='utf-8', errors='replace') if pwstore.LOG.exists() else ''
     entries = pwlog.collapse(pwlog.parse(text))
-    shown = [e for e in entries if pwlog.visible(e, mode, search, pr)]
+    shown = [e for e in entries if pwlog.visible(e, mode, search, pr, kinds, pwlog.cutoff(period))]
     page, older = pwlog.latest(shown, limit)
     out = []
     for entry in page:
         details = [{'blank': True} if not line.strip() else pwlog.detail_line(line) for line in entry['details']]
         out.append({**{k: entry[k] for k in ('date', 'time', 'last_time', 'pr', 'message', 'kind', 'count')}, 'details': details,
-                    'report': pwlog.is_report(entry)})
-    return {'entries': out, 'total': len(entries), 'shown': len(shown), 'older': older, 'modes': [{'id': k, 'label': v} for k, v in pwlog.MODES]}
+                    'report': pwlog.is_report(entry), 'links': pwlog.links(entry, workspace)})
+    return {'entries': out, 'total': len(entries), 'shown': len(shown), 'older': older, 'modes': [{'id': k, 'label': v} for k, v in pwlog.MODES],
+            'kinds': [{'id': k, 'label': label} for k, label, _ in pwlog.KIND_GROUPS], 'periods': [{'id': k, 'label': v} for k, v in pwlog.PERIODS]}

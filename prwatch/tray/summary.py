@@ -8,7 +8,7 @@ to that pull request in the window; the others (state, headings, the note on the
 from prwatch.actions import status as pwstatus
 
 # What asks something of the user, most urgent first; the other pull requests are listed after these.
-ACTIONS = ('attention', 'question', 'gave-up', 'ready', 'ticket-wait')
+ACTIONS = ('attention', 'question', 'gave-up', 'failed', 'changes', 'ready', 'ticket-wait')
 SHOWN = 5  # pull requests listed unless the option `trayMaxPrs` says otherwise; the menu would otherwise grow with the number of PRs
 # A coloured dot in front of each label: the native menu of the shell writes a line in plain text and puts the icon of an item at its far
 # right, so a coloured character is the only way to a dot beside its words.

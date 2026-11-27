@@ -2,6 +2,7 @@
 
 Pure Python (no GTK): the window that shows the journal only draws what this module computes.
 """
+import datetime
 import re
 
 ENTRY = re.compile(r'^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (.*)$')
@@ -22,6 +23,10 @@ def classify(message):
         return 'error'
     if 'infrastructure failure' in low:
         return 'warn'
+    if re.search(r'\bclaude committed\b', low):
+        return 'commit'
+    if re.search(r'\bclaude (replied|resolved)\b', low):
+        return 'reply'
     if 'resuming session' in low:
         return 'claude'
     if re.search(r'claude exited 0', low):
@@ -108,6 +113,47 @@ def collapse(entries):
     return folded
 
 
+# What the user can show or hide: id -> (label, the kinds it stands for). An entry is shown when its kind belongs to a ticked group.
+KIND_GROUPS = (
+    ('claude', 'Réveils de Claude', ('claude', 'ok')),
+    ('commit', 'Commits de Claude', ('commit',)),
+    ('reply', 'Réponses et fils résolus', ('reply',)),
+    ('notify', 'Notifications', ('notify', 'attention')),
+    ('error', 'Erreurs et alertes', ('error', 'warn')),
+    ('merge', 'Merges', ('ok-merge',)),
+    ('system', 'Démon et système', ('system',)),
+    ('info', 'Autres lignes', ('info', 'muted')),
+)
+
+PERIODS = (('', 'Toute la période'), ('1', 'Dernière heure'), ('today', 'Aujourd’hui'), ('24', '24 dernières heures'), ('168', '7 derniers jours'))
+
+
+def cutoff(period, now=None):
+    """The oldest moment a period shows, as the journal writes it ('YYYY-MM-DD HH:MM:SS'); '' when there is no limit."""
+    now = now or datetime.datetime.now()
+    if period == 'today':
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif isinstance(period, str) and period.isdigit() and int(period) > 0:
+        start = now - datetime.timedelta(hours=int(period))
+    else:
+        return ''
+    return start.strftime('%Y-%m-%d %H:%M:%S')
+
+
+def links(entry, workspace):
+    """Where Bitbucket shows what an entry talks about: [{label, url}] (the pull request, the commit, the comment)."""
+    if not workspace or not entry['pr']:
+        return []
+    repo, number = entry['pr'].split('#')
+    base = f"https://bitbucket.org/{workspace}/{repo}"
+    found = [{'label': entry['pr'], 'url': f"{base}/pull-requests/{number}", 'target': 'pr'}]
+    for sha in re.findall(r'\bcommitted ([0-9a-f]{7,40})\b', entry['message']):
+        found.append({'label': f"commit {sha[:7]}", 'url': f"{base}/commits/{sha}"})
+    for comment in re.findall(r'\bcomment (\d+)\b', entry['message']) if entry['kind'] == 'reply' else []:
+        found.append({'label': f"commentaire {comment}", 'url': f"{base}/pull-requests/{number}#comment-{comment}"})
+    return found
+
+
 MODES = (('all', 'Tout'), ('important', 'Notifications et erreurs'), ('claude', 'Claude'))
 
 
@@ -121,12 +167,17 @@ def latest(entries, limit):
     return entries[-limit:], len(entries) - limit
 
 
-def visible(entry, mode='all', search='', pr=''):
+def visible(entry, mode='all', search='', pr='', kinds=None, since=''):
+    """Whether the filters let an entry through: `kinds` is the list of ticked group ids (None = all), `since` a `cutoff()`."""
     if pr and entry['pr'] != pr:
         return False
     if mode == 'important' and entry['kind'] not in IMPORTANT:
         return False
-    if mode == 'claude' and entry['kind'] not in ('claude', 'ok', 'attention', 'notify'):
+    if mode == 'claude' and entry['kind'] not in ('claude', 'ok', 'attention', 'notify', 'commit', 'reply'):
+        return False
+    if kinds is not None and entry['kind'] not in {k for group, _, members in KIND_GROUPS if group in kinds for k in members}:
+        return False
+    if since and f"{entry['date']} {entry['last_time']}" < since:
         return False
     if search:
         haystack = ' '.join([entry['message'], entry['pr'] or '', *entry['details']]).lower()

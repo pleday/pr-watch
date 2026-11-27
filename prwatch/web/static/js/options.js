@@ -1,5 +1,6 @@
 // The options tab: the options, the permissions with their guides, the plugins to update.
 import { S, act, ask, askServer, confirmDialog, featureHidden, h, icon, toast } from './core.js';
+import { DEFAULTS, readColors, saveColors } from './colors.js';
 import { applyStaticTranslations, language, setLanguage, t } from './i18n.js';
 
 export function applyPermissions(summary) {
@@ -291,6 +292,23 @@ export function renderOptions(values, categories, quickChoices, maxQuick, autoMe
   h('option', { value: 'en' }, t('language.english')));
   languageSelect.value = language();
   const languageRow = h('label', { class: 'option' }, h('span', {}, t('language.label')), languageSelect);
+  const colorPanel = () => {
+    const choice = readColors();
+    const change = (changes) => { Object.assign(choice, changes); saveColors(choice); custom.hidden = choice.preset !== 'custom'; };
+    const preset = h('select', { 'aria-label': t('colors.preset'), onchange: (event) => change({ preset: event.target.value }) },
+      ...[['default', 'colors.default'], ['colour-blind', 'colors.blind'], ['contrast', 'colors.contrast'], ['custom', 'colors.custom']].map(([id, key]) => h('option', { value: id }, t(key))));
+    preset.value = choice.preset;
+    const picker = (index, key) => h('label', { class: 'option' }, h('span', {}, t(key)),
+      h('input', { type: 'color', value: choice.custom[index], 'aria-label': t(key), onchange: (event) => { const next = [...choice.custom]; next[index] = event.target.value; change({ custom: next }); } }));
+    const custom = h('div', {}, picker(0, 'colors.green'), picker(1, 'colors.orange'), picker(2, 'colors.red'),
+      h('button', { class: 'btn', type: 'button', onclick: () => { change({ custom: [...DEFAULTS.custom] }); custom.querySelectorAll('input[type=color]').forEach((input, index) => { input.value = DEFAULTS.custom[index]; }); } }, t('colors.reset')));
+    custom.hidden = choice.preset !== 'custom';
+    const patterns = h('input', { type: 'checkbox', checked: Boolean(choice.patterns), onchange: (event) => change({ patterns: event.target.checked }) });
+    return [h('p', { class: 'muted' }, t('colors.intro')),
+      h('label', { class: 'option' }, h('span', {}, t('colors.preset')), preset), custom,
+      h('label', { class: 'check' }, patterns, t('colors.patterns')),
+      h('div', { class: 'color-sample', 'aria-hidden': 'true' }, ...[['ready', 'colors.green'], ['changes', 'colors.orange'], ['failed', 'colors.red']].map(([kind, key]) => h('div', { class: `swatch ${kind}` }, h('span', { class: 'swatch-label' }, t(key)))))];
+  };
   const fieldsOf = (group) => OPTION_FIELDS.filter((f) => f[4] === group).map(field);
   const permissions = [h('div', { class: 'plugins' }, ...(S.permissionState?.checks || []).map((c) => h('div', { class: 'plugin' },
     h('span', {}, c.label), h('span', { class: 'muted' }, c.ok ? c.detail : `${c.declined ? 'refusée · ' : ''}${c.detail}`), h('span', {}, c.ok ? '✔' : c.required ? '✖' : '○')))),
@@ -308,7 +326,7 @@ export function renderOptions(values, categories, quickChoices, maxQuick, autoMe
     ['team', 'Équipe', [h('p', { class: 'muted' }, 'Ce qui dépend de votre équipe : où sont les pull requests, le site Jira, le contrôle qualité.'), profileRow(), ...fieldsOf('team')]],
     ['ticket', 'Ticket Jira', ticketNodes(values.ticketTransitions)],
     ['events', 'Événements', [h('p', { class: 'muted' }, 'Ce que Claude traite, par défaut. Chaque PR peut avoir ses propres choix (bouton « Réglages… » de sa carte).'), ...handling]],
-    ['cards', 'Cartes', [h('label', { class: 'check' }, autoBox, 'Automatique : les actions qui conviennent à l’état de chaque PR (prête à merger, à pousser, attention…)'), h('p', { class: 'muted' }, `Sinon, ces actions sont toujours affichées (${maxQuick} au plus) sur une carte réduite ; les autres sont dans le menu « … » de la carte.`), h('div', { class: 'quick-list' }, ...boxes)]],
+    ['appearance', 'Affichage des cartes', [h('h2', { class: 'section' }, 'Actions affichées'), h('label', { class: 'check' }, autoBox, 'Automatique : les actions qui conviennent à l’état de chaque PR (prête à merger, à pousser, attention…)'), h('p', { class: 'muted' }, `Sinon, ces actions sont toujours affichées (${maxQuick} au plus) sur une carte réduite ; les autres sont dans le menu « … » de la carte.`), h('div', { class: 'quick-list' }, ...boxes), h('h2', { class: 'section' }, t('colors.title')), h('div', { class: 'colors-section' }, ...colorPanel())]],
     ['system', 'Système', [h('h2', { class: 'section' }, 'Autorisations'), ...permissions, h('h2', { class: 'section' }, 'Plugins Claude Chat'), ...plugins]],
   ];
   let current = panels.some(([id]) => id === S.optionsPanel) ? S.optionsPanel : panels[0][0];

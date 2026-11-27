@@ -84,11 +84,15 @@ export async function addPrDialog() {
   const dialog = document.getElementById('dialog');
   const reference = h('input', { type: 'text', name: 'reference', placeholder: 'https://bitbucket.org/…/pull-requests/12 ou dépôt#12', 'aria-label': 'Adresse de la pull request' });
   const details = h('div', { class: 'row' });
-  const state = { found: null };
+  const state = { found: null, submit: null, add: null };
+  // The button of the footer is always there; it is only dimmed until there is a pull request to add (and says why).
+  const setAdd = (enabled, why) => { state.add.disabled = !enabled; if (enabled) state.add.removeAttribute('title'); else state.add.title = why; };
   const lookup = async () => {
     details.replaceChildren(h('p', { class: 'muted' }, 'Recherche…'));
+    state.submit = null;
+    setAdd(false, 'Recherchez d’abord une pull request.');
     const result = await askServer('pr-lookup', { reference: reference.value });
-    if (!result.ok) { state.found = null; details.replaceChildren(h('p', { class: 'banner' }, result.message)); return; }
+    if (!result.ok) { state.found = null; setAdd(false, result.message); details.replaceChildren(h('p', { class: 'banner' }, result.message)); return; }
     state.found = result;
     const workDir = h('input', { type: 'text', name: 'workDir', value: result.workDir, 'aria-label': 'Dossier du clone local' });
     const sessionBox = h('div', { class: 'sessions' });
@@ -109,26 +113,29 @@ export async function addPrDialog() {
       others.append('Autres clones trouvés : ', ...result.clones.slice(1).flatMap((path) => [
         h('button', { class: 'btn', type: 'button', title: path, onclick: () => { workDir.value = path; reload(); } }, path.split('/').pop() || path), ' ']));
     }
-    const add = h('button', { class: 'btn primary', type: 'button', disabled: result.state !== 'OPEN', onclick: async () => {
+    state.submit = async () => {
       const chosen = sessionBox.querySelector('input[name="session"]:checked');
       if (!chosen) { toast('Choisissez la session Claude à réveiller pour cette PR.', true); return; }
       if (chosen.value === 'new') toast('Création de la session Claude…');
-      add.disabled = true;
+      state.add.disabled = true;
       const done = await act('add-pr', { repo: result.repo, pr: result.pr, workDir: workDir.value, sessionId: chosen.value });
-      add.disabled = false;
-      if (done.ok) dialog.close();
-    } }, icon('add'), 'Ajouter à la surveillance');
+      if (done.ok) dialog.close(); else setAdd(true);
+    };
+    setAdd(result.state === 'OPEN', `Cette pull request est ${result.state.toLowerCase()} : rien à surveiller.`);
     details.replaceChildren(
       h('p', {}, h('strong', {}, `${result.repo} #${result.pr}`), ` ${result.title}`, h('div', { class: 'muted' }, `Branche ${result.branch}${result.state !== 'OPEN' ? ` · ${result.state.toLowerCase()} : rien à surveiller` : ''}`)),
       h('label', { class: 'column' }, h('span', {}, 'Dossier du clone local'), workDir, others),
-      h('div', { class: 'column' }, h('span', {}, 'Session Claude à réveiller pour cette PR'), sessionBox), add);
+      h('div', { class: 'column' }, h('span', {}, 'Session Claude à réveiller pour cette PR'), sessionBox));
   };
   reference.addEventListener('keydown', (event) => { if (event.key === 'Enter') lookup(); });
-  await ask({
+  const asked = ask({
     title: 'Ajouter une pull request',
-    body: () => h('div', { class: 'row' }, h('div', { class: 'inline' }, reference, h('button', { class: 'btn', type: 'button', onclick: lookup }, 'Rechercher')), details),
-    buttons: [{ label: 'Fermer', value: false }],
+    body: (data) => { state.data = data; return h('div', { class: 'row' }, h('div', { class: 'inline' }, reference, h('button', { class: 'btn', type: 'button', onclick: lookup }, 'Rechercher')), details); },
+    buttons: [{ label: 'Fermer', value: false },
+      { label: 'Ajouter à la surveillance', kind: 'primary', icon: 'add', ref: 'add', disabled: true, title: 'Recherchez d’abord une pull request.', keepOpen: true, onclick: () => state.submit?.() }],
   });
+  state.add = state.data.add;  // built by ask() before the first lookup can run
+  await asked;
 }
 
 export async function mergeDialog(entry) {

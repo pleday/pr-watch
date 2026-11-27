@@ -8,10 +8,16 @@ from prwatch.core import config as pwconfig
 from prwatch.core import store as pwstore
 from prwatch.system import claude as pwclaude
 
-def register_pr(repo, pr, branch, work_dir, session, session_cwd, since_pipeline=None, settings=None, origin=None, title=None):
+class AlreadyWatched(Exception):
+    """The pull request is already on the list and `unique` was asked: nothing is replaced."""
+
+
+def register_pr(repo, pr, branch, work_dir, session, session_cwd, since_pipeline=None, settings=None, origin=None, title=None, unique=False):
     """Puts a pull request on the list (or replaces it): what `pr-watch register` and the dashboard's "add" both do.
 
     Only what happens after this moment is looked at: the comments and pipelines that exist now are not events.
+    With `unique` (the dashboard's "add"), a pull request already followed is refused (`AlreadyWatched`) instead of replaced:
+    the command line replaces it on purpose, to point it at another session or clone.
     """
     entry = {
         'repo': repo,
@@ -33,7 +39,10 @@ def register_pr(repo, pr, branch, work_dir, session, session_cwd, since_pipeline
     entry['lastComment'] = pwbitbucket.max_comment_id(entry)
     entry['lastPipeline'] = since_pipeline if since_pipeline is not None else pwbitbucket.max_pipeline(entry)
     with pwstore.registry_lock():
-        entries = [e for e in pwstore.load_registry() if pwstore.key_of(e) != pwstore.key_of(entry)]
+        current = pwstore.load_registry()
+        if unique and any(pwstore.key_of(e) == pwstore.key_of(entry) and e.get('state') != 'done' for e in current):
+            raise AlreadyWatched(pwstore.key_of(entry))
+        entries = [e for e in current if pwstore.key_of(e) != pwstore.key_of(entry)]
         pwstore.save_registry(entries + [entry])
     return entry
 

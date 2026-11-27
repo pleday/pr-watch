@@ -119,6 +119,9 @@ class Handler(BaseHTTPRequestHandler):
                 (query.get('search') or [''])[0].strip(),
                 (query.get('pr') or [''])[0],
                 int(limit) if limit.isdigit() else pwlog.PAGE,
+                # None when the parameter is absent (every kind); an empty one means that none is ticked
+                [k for k in query['kinds'][0].split(',') if k] if 'kinds' in query else None,
+                (query.get('period') or [''])[0],
             ))
         if url.path == '/api/report':
             repo, pr = (query.get('repo') or [''])[0], (query.get('pr') or [''])[0]

@@ -91,6 +91,9 @@ Le pipeline a échoué <script>window.__xss=2</script>.
 PR-WATCH: ATTENTION le relecteur demande un choix
 2026-11-17 10:05:01 NOTIFY PR 1 : votre attention est nécessaire: le relecteur demande un choix
 2026-11-18 09:00:00 NOTIFY PR 2 prête à être mergée: fake-repo : titre
+2026-11-18 09:00:30 fake-repo#1: claude committed 0123456789ab: fix(web): handle the empty case
+Explains why.
+2026-11-18 09:00:40 fake-repo#1: claude replied on comment 42: Corrigé.
 2026-11-18 09:01:00 fake-repo#1: claude exited 1
 """,
     encoding='utf-8',

@@ -74,7 +74,11 @@ body.options-active main { padding-top: 0; }
 .cards { display: grid; gap: 14px; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
 .card.attention { border-color: var(--red); }
-.card.ready { border-color: var(--green); }
+.card.ready { border-color: var(--green); } .card.changes { border-color: var(--orange); } .card.failed { border-color: var(--red); }
+/* the frame of a state that matters is doubled (without moving anything), and the patterns option adds a cue that is not a colour */
+.card.attention, .card.ready, .card.changes, .card.failed { box-shadow: 0 0 0 1px var(--frame, var(--border)), var(--shadow); }
+.card.attention { --frame: var(--red); } .card.ready { --frame: var(--green); } .card.changes { --frame: var(--orange); } .card.failed { --frame: var(--red); }
+body.frame-patterns .card.changes { border-style: dashed; } body.frame-patterns .card.failed { border-style: double; border-width: 4px; box-shadow: var(--shadow); } body.frame-patterns .card.ready { border-style: solid; }
 .card.done { opacity: .65; }
 .card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .mini-actions { display: inline-flex; gap: 4px; margin-left: auto; }
@@ -89,7 +93,7 @@ body.options-active main { padding-top: 0; }
 .card-title { flex: 1 1 320px; font-weight: 600; }
 .chip { display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; border: 1px solid currentColor; }
 .chip.watching { color: var(--blue); } .chip.paused { color: var(--muted); } .chip.ready { color: var(--green); }
-.chip.attention, .chip.gave-up { color: var(--red); } .chip.done { color: var(--muted); }
+.chip.attention, .chip.gave-up, .chip.failed { color: var(--red); } .chip.changes { color: var(--orange); } .chip.done { color: var(--muted); }
 .branch { margin: 4px 0 8px; }
 [hidden] { display: none !important; }  /* `display: flex` rules (banners, panels) must not show what is hidden */
 .banner { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: color-mix(in srgb, var(--red) 12%, transparent); color: var(--red); font-weight: 600; }
@@ -113,6 +117,12 @@ input, select { font: inherit; padding: 5px 9px; border-radius: 8px; border: 1px
 .entry .time { color: var(--muted); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .9em; margin-right: 8px; }
 .entry .pr { color: var(--blue); font-weight: 700; margin-right: 8px; }
 .entry .times { color: var(--muted); font-style: italic; margin-left: 6px; font-size: .9em; }
+.entry a.pr { text-decoration: none; } .entry a.pr:hover { text-decoration: underline; }
+.entry a.about { color: var(--blue); margin-left: 8px; font-size: .9em; white-space: nowrap; }
+.k-commit { color: var(--green); } .k-reply { color: var(--purple); }
+.kinds { position: relative; }
+.kinds summary { cursor: pointer; padding: 5px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); list-style: none; }
+.kinds-list { position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; display: grid; gap: 6px; min-width: 230px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); box-shadow: 0 6px 18px rgba(0, 0, 0, .25); }
 .k-attention { color: var(--red); font-weight: 700; } .k-error { color: var(--red); } .k-notify { color: var(--orange); font-weight: 700; }
 .k-warn { color: var(--orange); } .k-ok { color: var(--green); } .k-ok-merge { color: var(--green); font-weight: 700; }
 .k-claude { color: var(--purple); } .k-system { color: var(--blue); } .k-muted { color: var(--muted); }
@@ -123,9 +133,9 @@ input, select { font: inherit; padding: 5px 9px; border-radius: 8px; border: 1px
 .details .verdict-OK { color: var(--green); font-weight: 700; margin-top: 4px; } .details .verdict-ATTENTION { color: var(--red); font-weight: 700; margin-top: 4px; }
 .bold { font-weight: 700; }
 
-.options { display: grid; gap: 14px; max-width: 720px; }
-.options .subtabs { position: sticky; top: 0; z-index: 4; padding: 0; margin: 0 0 4px; border: 0; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--blue) 4%, var(--surface)); box-shadow: none; flex-wrap: wrap; }
-.options .subtabs button { color: color-mix(in srgb, var(--muted) 65%, var(--text)); }
+.options { display: grid; gap: 14px; max-width: 800px; }
+.options .subtabs { position: sticky; top: 0; z-index: 4; padding: 0; margin: 0 0 4px; border: 0; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--blue) 4%, var(--surface)); box-shadow: none; gap: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.options .subtabs button { white-space: nowrap; flex: none; color: color-mix(in srgb, var(--muted) 65%, var(--text)); }
 .options .subtabs button[aria-selected="true"] { color: var(--text); }
 .options .panel { display: grid; gap: 14px; }
 .options .ticket-rows { display: grid; gap: 8px; }
@@ -174,7 +184,7 @@ textarea.drafting { background-image: linear-gradient(90deg, transparent, color-
 .log .older { display: block; margin: 6px auto 10px; }
 .card { cursor: default; }
 .state-icon { font-size: 18px; line-height: 1; cursor: help; }
-.state-icon.attention, .state-icon.gave-up { color: var(--red); } .state-icon.ready { color: var(--green); }
+.state-icon.attention, .state-icon.gave-up, .state-icon.failed { color: var(--red); } .state-icon.changes { color: var(--orange); } .state-icon.ready { color: var(--green); }
 .state-icon.watching { color: var(--blue); } .state-icon.paused, .state-icon.done { color: var(--muted); }
 .chip.ticket-wait { color: var(--purple); } .state-icon.ticket-wait { color: var(--purple); }
 .chip.unpushed { color: var(--orange, #d9822b); }
@@ -264,3 +274,19 @@ dialog .row .btn.primary { align-self: flex-start; }
 /* unread reports: a pill on the corner of the report button */
 .btn.has-pill { position: relative; }
 .btn .pill { position: absolute; top: -6px; right: -6px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 999px; background: var(--red); color: var(--on-accent); font-size: 11px; font-weight: 700; line-height: 16px; text-align: center; pointer-events: none; }
+@media (max-width: 600px) {
+  .kinds { position: static; flex: 1 1 100%; }
+  .kinds-list { position: static; margin-top: 6px; min-width: 0; box-shadow: none; }
+}
+.color-sample { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.swatch { padding: 8px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.swatch-label { font-weight: 700; font-size: 12px; } .swatch.ready .swatch-label { color: var(--green); } .swatch.changes .swatch-label { color: var(--orange); } .swatch.failed .swatch-label { color: var(--red); }
+.swatch.ready { --frame: var(--green); } .swatch.changes { --frame: var(--orange); } .swatch.failed { --frame: var(--red); }
+.swatch.ready, .swatch.changes, .swatch.failed { border-color: var(--frame); box-shadow: 0 0 0 1px var(--frame); }
+body.frame-patterns .swatch.changes { border-style: dashed; } body.frame-patterns .swatch.failed { border-style: double; border-width: 4px; box-shadow: none; }
+/* the journal's filters stay on one line on a wide window (the search box takes what is left); on a narrow one they wrap */
+#tab-log .toolbar select { min-width: 0; max-width: 170px; text-overflow: ellipsis; }
+#tab-log .toolbar input[type="search"] { min-width: 90px; }
+#tab-log .toolbar .btn.icon-only { padding: 0; width: 30px; flex: none; }
+@media (min-width: 900px) { #tab-log .toolbar { flex-wrap: nowrap; } #tab-log .toolbar > * { flex-shrink: 0; } #tab-log .toolbar input[type="search"] { flex-shrink: 1; } }
+@media (max-width: 800px) { .options .subtabs { flex-wrap: wrap; overflow: visible; } }

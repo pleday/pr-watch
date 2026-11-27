@@ -554,6 +554,39 @@ class CloneGuessTest(unittest.TestCase):
             self.assertEqual(self.guesses(root, 'PROJ-1-x'), [working, named])
 
 
+class UniquenessTest(unittest.TestCase):
+    def setUp(self):
+        reset_config()
+
+    def test_a_pull_request_already_followed_cannot_be_looked_up_nor_added(self):
+        for state in ('watching', 'paused', 'gave-up'):
+            set_registry([entry(1, state=state)])
+            with mock.patch.object(pwbitbucket, 'api') as api:
+                looked = pwadding.pr_lookup('fake-repo#1')
+                added = pwadding.add_pr('fake-repo', 1, '/nowhere', 'new')
+            self.assertFalse(looked['ok'])
+            self.assertTrue(looked['watched'])
+            self.assertIn('déjà dans la liste', looked['message'])
+            self.assertFalse(added['ok'])
+            api.assert_not_called()  # refused before Bitbucket is asked and before a session is created
+            self.assertEqual(len(registry()), 1)
+
+    def test_a_finished_one_may_be_added_again_and_another_number_is_not_concerned(self):
+        set_registry([entry(1, state='done')])
+        self.assertIsNone(pwadding.already_watched('fake-repo', 1))
+        self.assertIsNone(pwadding.already_watched('fake-repo', 2))
+        self.assertIsNone(pwadding.already_watched('other-repo', 1))
+
+    def test_the_registration_itself_refuses_a_second_entry_when_unique_is_asked(self):
+        from prwatch.engine import registration
+        set_registry([entry(1)])
+        with mock.patch.object(pwbitbucket, 'max_comment_id', return_value=0), mock.patch.object(pwbitbucket, 'max_pipeline', return_value=0):
+            with self.assertRaises(registration.AlreadyWatched):
+                registration.register_pr('fake-repo', 1, 'b', '/w', 's', '/w', unique=True)
+            registration.register_pr('fake-repo', 1, 'b2', '/w', 's', '/w')  # the command line replaces on purpose
+        self.assertEqual([(e['pr'], e['branch']) for e in registry()], [(1, 'b2')])
+
+
 class QuestionAnswerTest(unittest.TestCase):
     QUESTION = {'id': 9, 'author': 'Relecteur', 'place': 'a.ts:3', 'text': 'On valide ?', 'at': 'x'}
 
@@ -669,6 +702,9 @@ class StatusIconTest(unittest.TestCase):
             ({'state': 'paused'}, '⏸', 'pause'),
             ({'state': 'done', 'doneReason': 'MERGED'}, '■', 'Fusionnée'),
             ({'mergeBlockers': ['2 tâche(s) ouverte(s)']}, '👁', 'Bloque le merge : 2 tâche'),
+            ({'mergeBlockers': ['approbations 0/1', 'pipeline #7 en échec']}, '⛔', 'Pipeline #7 en échec'),
+            ({'changesRequestedBy': ['Alice', 'Bob']}, '✎', 'Alice, Bob demandent des modifications'),
+            ({'changesRequestedBy': ['Alice']}, '✎', 'Alice demande des modifications'),
         ]
         for fields, icon, words in cases:
             with self.subTest(fields=fields):
@@ -676,6 +712,13 @@ class StatusIconTest(unittest.TestCase):
                 self.assertEqual(result['icon'], icon)
                 self.assertIn(words, result['tip'])
                 self.assertIsNone(result['unpushed'])
+
+    def test_a_failed_pipeline_comes_before_changes_requested_and_after_what_needs_the_user(self):
+        both = {'mergeBlockers': ['pipeline #7 en échec'], 'changesRequestedBy': ['Alice']}
+        self.assertEqual(pwstatus.status(entry(1, **both))['kind'], 'failed')
+        self.assertEqual(pwstatus.status(entry(1, **both, needsAttention='x'))['kind'], 'attention')
+        self.assertEqual(pwstatus.status(entry(1, changesRequestedBy=['A']))['kind'], 'changes')
+        self.assertEqual(pwstatus.status(entry(1, changesRequestedBy=['A'], state='paused'))['kind'], 'paused')
 
     def test_commits_waiting_for_a_push_are_flagged(self):
         result = pwstatus.status(entry(1, ready=True), {'commits': 2, 'neverPushed': False})

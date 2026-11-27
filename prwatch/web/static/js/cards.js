@@ -1,6 +1,6 @@
 // The card of a pull request: its state, its quick buttons, its menu, its expanded details.
 import { ICONS, S, act, askServer, featureHidden, h, icon, loadedAt } from './core.js';
-import { formatDateTime } from './i18n.js';
+import { formatDateTime, t } from './i18n.js';
 import { confirmAction, mergeDialog, openSession, ownChoices, pushDialog, settingsDialog, ticketDialog } from './dialogs.js';
 import { selectTab, showJournal } from './journal.js';
 
@@ -101,7 +101,7 @@ export function card(entry, state) {
   const reportTip = (action) => (action.id === 'report' ? `${action.label} — ${entry.reportsUnread} non lu${entry.reportsUnread > 1 ? 's' : ''} (${entry.reportsTotal} au total)` : action.label);
   const button = (action) => h('button', { class: `btn ${action.kind || ''} ${unread(action) ? 'has-pill' : ''}`, type: 'button', title: reportTip(action), onclick: action.run }, icon(action.icon), action.label, unread(action));
   const mini = (action) => h('button', { class: `btn mini ${action.kind === 'primary' || action.kind === 'good' ? action.kind : ''} ${unread(action) ? 'has-pill' : ''}`, type: 'button', title: reportTip(action), 'aria-label': reportTip(action), onclick: action.run }, icon(action.icon), unread(action));
-  const article = h('article', { class: `card ${entry.needsAttention ? 'attention' : ''} ${entry.ready && !entry.needsAttention ? 'ready' : ''} ${entry.state === 'done' ? 'done' : ''} ${S.focusKey === `${entry.repo}#${entry.pr}` ? 'focus' : ''}` },
+  const article = h('article', { class: `card ${entry.needsAttention ? 'attention' : ''} ${entry.ready && !entry.needsAttention ? 'ready' : ''} ${['changes', 'failed'].includes(entry.status.kind) ? entry.status.kind : ''} ${entry.state === 'done' ? 'done' : ''} ${S.focusKey === `${entry.repo}#${entry.pr}` ? 'focus' : ''}` },
     h('div', { class: 'card-head' },
       h('button', { class: 'toggle', type: 'button', 'aria-expanded': 'false', title: 'Étendre / réduire', 'aria-label': 'Étendre ou réduire la carte', onclick: () => setExpanded(article, !article.classList.contains('expanded')) }, icon('chevron')),
       h('span', { class: `state-icon ${kind}`, title: entry.status.tip, 'aria-label': entry.status.tip }, ICONS[kind] ? icon(kind) : entry.status.icon),
@@ -120,6 +120,7 @@ export function card(entry, state) {
         : null,
       (entry.pendingQuestions || []).map((question) => questionBox(entry, question)),
       h('div', { class: 'branch muted' }, h('code', {}, entry.branch)),
+      entry.status.kind === 'changes' ? h('div', { class: 'muted' }, t('card.changes', { names: entry.changesRequestedBy.join(', ') })) : null,
       entry.removeInMinutes === null || entry.removeInMinutes === undefined ? null : h('div', { class: 'muted' }, `Sera retirée de la liste dans ${entry.removeInMinutes} min (délai compté depuis la fin de la PR).`),
       entry.autoMergeNote && entry.effective?.autoMerge !== 'off' ? h('div', { class: 'muted' }, `Merge automatique en attente : ${entry.autoMergeNote}.`) : null,
       blockers.length ? h('ul', { class: 'blockers' }, h('li', {}, 'Bloque le merge :'), ...blockers.map((b) => h('li', {}, b))) : null,
@@ -134,7 +135,7 @@ export function card(entry, state) {
   article.dataset.key = `${entry.repo}#${entry.pr}`;
   // what the filter of the list looks at
   article.dataset.search = [entry.repo, `#${entry.pr}`, entry.title, entry.branch, entry.ticket].filter(Boolean).join(' ').toLowerCase();
-  article.dataset.actionable = entry.needsAttention || entry.status.kind === 'ticket-wait' || entry.pendingQuestions?.length || entry.ready || entry.state === 'gave-up' ? '1' : '';
+  article.dataset.actionable = entry.needsAttention || ['changes', 'failed'].includes(entry.status.kind) || entry.status.kind === 'ticket-wait' || entry.pendingQuestions?.length || entry.ready || entry.state === 'gave-up' ? '1' : '';
   setExpanded(article, expandedCards.has(article.dataset.key));
   // the mark of a notification stays until the user touches the card: the cards are rebuilt at every change
   article.addEventListener('pointerdown', () => {
